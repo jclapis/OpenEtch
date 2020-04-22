@@ -1,0 +1,145 @@
+﻿<!-- 
+/* ========================================================================
+ * Copyright (C) 2020 Joe Clapis.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ======================================================================== */
+-->
+
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" Width="800" Height="600"
+        x:Class="OpenEtch.MainWindow"
+        Title="OpenEtch">
+  <DockPanel>
+    <Menu DockPanel.Dock="Top">
+      <MenuItem Header="_File">
+
+      </MenuItem>
+    </Menu>
+
+    <Grid ColumnDefinitions="220, *">
+      <Grid Grid.Column="0" RowDefinitions="Auto, Auto, *">
+
+        <!-- Control Buttons -->
+        <Grid Grid.Row="0" RowDefinitions="Auto, Auto, Auto, Auto">
+          <Button Name="LoadImageButton" Grid.Row="0" Margin="5" Content="Load Image" Click="LoadImage_Click"/>
+          <Button Name="CalculatePathsButton" Grid.Row="1" Margin="5" Content="Calculate Paths" IsEnabled="False" Click="CalculatePaths_Click" />
+          <Button Name="ExportButton" Grid.Row="2" Margin="5" Content="Export G-code" IsEnabled="False" Click="Export_Click"/>
+          <Grid Grid.Row="3" RowDefinitions="Auto, Auto, Auto, Auto, Auto" ColumnDefinitions="Auto, *">
+            <TextBlock Name="ImageWidthLabel" Grid.Row="0" Grid.Column="0" Text="Image Width:" HorizontalAlignment="Right" Margin="5"/>
+            <TextBlock Name="ImageHeightLabel" Grid.Row="1" Grid.Column="0" Text="Image Height:" HorizontalAlignment="Right" Margin="5"/>
+            <TextBlock Name="TargetWidthLabel" Grid.Row="2" Grid.Column="0" Text="Target Width:" HorizontalAlignment="Right" Margin="5"/>
+            <TextBlock Name="TargetHeightLabel" Grid.Row="3" Grid.Column="0" Text="Target Height:" HorizontalAlignment="Right" Margin="5"/>
+            <TextBlock Name="RuntimeLabel" Grid.Row="4" Grid.Column="0" Text="Runtime:" HorizontalAlignment="Right" Margin="5"/>
+          </Grid>
+        </Grid>
+
+        <StackPanel Grid.Row="1">
+          <TextBlock Text="Settings" FontWeight="Bold" HorizontalAlignment="Center"/>
+          <Rectangle Grid.Row="1" Height="2" Fill="Black" Margin="5"/>
+        </StackPanel>
+
+        <!-- Settings -->
+        <Grid Grid.Row="2" Margin="5">
+
+          <Border BorderBrush="Black" BorderThickness="1" CornerRadius="4">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="5">
+              <StackPanel>
+                
+                <!-- Physical Parameters -->
+                <TextBlock HorizontalAlignment="Center" Text="Physical Parameters" FontWeight="Bold" Margin="5"/>
+                <Grid RowDefinitions="Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto" ColumnDefinitions="100, *">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Margin="5" Text="Pixel Size (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                  <TextBox Name="PixelSizeBox" Grid.Row="0" Grid.Column="1" Text="0.02"/>
+
+                  <TextBlock Grid.Row="2" Grid.Column="0" Margin="5" Text="Origin X (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"
+                             ToolTip.Tip="The X coordinate of the target's bottom-left corner"/>
+                  <TextBox Name="OriginXBox" Grid.Row="2" Grid.Column="1" Text="70"
+                             ToolTip.Tip="The X coordinate of the target's bottom-left corner"/>
+
+                  <TextBlock Grid.Row="4" Grid.Column="0" Margin="5" Text="Origin Y (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"
+                             ToolTip.Tip="The Y coordinate of the target's bottom-left corner"/>
+                  <TextBox Name="OriginYBox" Grid.Row="4" Grid.Column="1" Text="140"
+                             ToolTip.Tip="The Y coordinate of the target's bottom-left corner"/>
+
+                  <TextBlock Grid.Row="6" Grid.Column="0" Margin="5" Text="Z Height (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                  <TextBox Name="ZHeightBox" Grid.Row="6" Grid.Column="1" Text="50"/>
+
+                  <TextBlock Grid.Row="8" Grid.Column="0" Margin="5" Text="Travel Speed (mm/min):" VerticalAlignment="Center" HorizontalAlignment="Right" TextWrapping="Wrap"
+                             ToolTip.Tip="The speed of the laser assembly between etching steps, when the laser is off"/>
+                  <TextBox Name="TravelSpeedBox" Grid.Row="8" Grid.Column="1" Text="1000"
+                             ToolTip.Tip="The speed of the laser assembly between etching steps, when the laser is off"/>
+
+                  <TextBlock Grid.Row="10" Grid.Column="0" Margin="5" Text="Etch Speed (mm/min):" VerticalAlignment="Center" HorizontalAlignment="Right" TextWrapping="Wrap"
+                             ToolTip.Tip="The speed of the laser assembly during an etching step, when the laser is on"/>
+                  <TextBox Name="EtchSpeedBox" Grid.Row="10" Grid.Column="1" Text="100"
+                             ToolTip.Tip="The speed of the laser assembly during an etching step, when the laser is on"/>
+                </Grid>
+
+                <!-- G-code Commands -->
+                <TextBlock HorizontalAlignment="Center" Text="G-code Commands" FontWeight="Bold" Margin="5,15,5,5"/>
+                <Grid RowDefinitions="Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto" ColumnDefinitions="Auto, *">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Margin="5" Text="Laser Off:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                  <TextBox Name="LaserOffCommandBox" Grid.Row="0" Grid.Column="1" Text="M107"/>
+
+                  <TextBlock Grid.Row="2" Grid.Column="0" Margin="5" Text="Laser Low:" VerticalAlignment="Center" HorizontalAlignment="Right"
+                             ToolTip.Tip="The command to use for low-power laser mode, used in operations like the pre-etch trace"/>
+                  <TextBox Name="LaserLowCommandBox" Grid.Row="2" Grid.Column="1" Text="M106 S10"
+                             ToolTip.Tip="The command to use for low-power laser mode, used in operations like the pre-etch trace"/>
+
+                  <TextBlock Grid.Row="4" Grid.Column="0" Margin="5" Text="Laser High:" VerticalAlignment="Center" HorizontalAlignment="Right"
+                             ToolTip.Tip="The command to use for high-power laser mode, used in etching steps"/>
+                  <TextBox Name="LaserHighCommandBox" Grid.Row="4" Grid.Column="1" Text="M106 S255"
+                             ToolTip.Tip="The command to use for high-power laser mode, used in etching steps"/>
+
+                  <TextBlock Grid.Row="6" Grid.Column="0" Margin="5" Text="Move:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                  <DropDown Name="MoveCommandBox" Grid.Row="6" Grid.Column="1" SelectedIndex="0">
+                    <DropDownItem Content="G0"/>
+                    <DropDownItem Content="G1"/>
+                  </DropDown>
+
+                  <TextBlock Grid.Row="8" Grid.Column="0" Margin="5" Text="Home:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                  <TextBox Name="HomeCommandBox" Grid.Row="8" Grid.Column="1" Text="G28 X Y"/>
+
+                  <TextBlock Grid.Row="10" Grid.Column="0" Margin="5" Text="Comments:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                  <DropDown Name="CommentStyleBox" Grid.Row="10" Grid.Column="1" SelectedIndex="0">
+                    <DropDownItem Content="; [Semicolon]"/>
+                    <DropDownItem Content="(...) [Parentheses]"/>
+                  </DropDown>
+                </Grid>
+
+                <!-- Pre-Etch Tracing -->
+                <TextBlock HorizontalAlignment="Center" Text="Pre-Etch Tracing" FontWeight="Bold" Margin="5,15,5,5"/>
+                <Grid RowDefinitions="Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto" ColumnDefinitions="Auto, *">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Margin="5" Text="Enabled:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                  <CheckBox Name="PreEtchTraceToggle" Grid.Row="0" Grid.Column="1" IsChecked="True"/>
+
+                  <TextBlock Grid.Row="2" Grid.Column="0" Margin="5" Text="Origin Pause (ms):" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                  <TextBox Name="PreEtchTraceOriginDelayBox" Grid.Row="2" Grid.Column="1" Text="5000"/>
+                </Grid>
+                
+              </StackPanel>
+            </ScrollViewer>
+          </Border>
+        </Grid>
+
+      </Grid>
+
+      <Image Grid.Column="1" Name="Preview" Margin="5" RenderOptions.BitmapInterpolationMode="LowQuality"/>
+
+    </Grid>
+  </DockPanel>
+</Window>
