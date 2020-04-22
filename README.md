@@ -1,2 +1,2 @@
 # OpenEtch
-A simple GUI for generating laser ablator G-code from raster images.
+A simple GUI for generating laser etcher / engraver G-code from raster images.
