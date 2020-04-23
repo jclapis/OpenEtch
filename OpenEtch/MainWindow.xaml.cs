@@ -17,11 +17,13 @@
  
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Visuals.Media.Imaging;
 using System;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace OpenEtch
@@ -31,9 +33,24 @@ namespace OpenEtch
     /// </summary>
     public class MainWindow : Window
     {
+        /// <summary>
+        /// The image processor for loading images and parsing them
+        /// into etch segments
+        /// </summary>
         private readonly ImageProcessor ImageProcessor;
 
-        private ProcessedImage ProcessedImage;
+
+        /// <summary>
+        /// The router for converting etch segments into laser moves
+        /// </summary>
+        private readonly Router Router;
+
+
+        /// <summary>
+        /// The etching route for the loaded image
+        /// </summary>
+        private Route Route;
+
 
         /// <summary>
         /// Creates a new MainWindow instance.
@@ -45,6 +62,7 @@ namespace OpenEtch
             this.AttachDevTools();
 #endif
             ImageProcessor = new ImageProcessor();
+            Router = new Router();
         }
 
 
@@ -53,8 +71,14 @@ namespace OpenEtch
         /// </summary>
         /// <param name="sender">Not used</param>
         /// <param name="e">Not used</param>
-        public async void LoadImage_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
+        public async void LoadImageButton_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
+            Button runtimeButton = this.FindControl<Button>("CalculateRuntimeButton");
+            Button exportButton = this.FindControl<Button>("ExportButton");
+            runtimeButton.IsEnabled = false;
+            exportButton.IsEnabled = false;
+            Route = null;
+
             // Give the user a new dialog for choosing the image file
             OpenFileDialog dialog = new OpenFileDialog()
             {
@@ -84,16 +108,14 @@ namespace OpenEtch
 
             // Try to load and process the image
             string imagePath = selection[0];
-            Button exportButton = this.FindControl<Button>("ExportButton");
             try
             {
                 LoadImage(imagePath);
-                exportButton.IsEnabled = true;
+                runtimeButton.IsEnabled = true;
             }
             catch(Exception ex)
             {
-                ProcessedImage = null;
-                exportButton.IsEnabled = false;
+                Route = null;
                 await MessageBox.Show(this, $"Error loading image: {ex.Message}", "Error loading image");
                 return;
             }
@@ -106,15 +128,55 @@ namespace OpenEtch
         /// <param name="ImagePath">The path on the filesystem of the image to load</param>
         private void LoadImage(string ImagePath)
         {
-            ProcessedImage = ImageProcessor.ProcessImage(ImagePath);
+            ProcessedImage image = ImageProcessor.ProcessImage(ImagePath);
             Image preview = this.FindControl<Image>("Preview");
-            preview.Source = ProcessedImage.Bitmap;
+            preview.Source = image.Bitmap;
             preview.InvalidateVisual();
 
             TextBlock imageWidthLabel = this.FindControl<TextBlock>("ImageWidthLabel");
             TextBlock imageHeightLabel = this.FindControl<TextBlock>("ImageHeightLabel");
-            imageWidthLabel.Text = $"{ProcessedImage.Width} px";
-            imageHeightLabel.Text = $"{ProcessedImage.Height} px";
+            imageWidthLabel.Text = $"{image.Width} px";
+            imageHeightLabel.Text = $"{image.Height} px";
+
+            RouteImage(image);
+        }
+
+
+        private void RouteImage(ProcessedImage Image)
+        {
+            Route = Router.Route(Image);
+        }
+
+
+        /// <summary>
+        /// Estimates the runtime for the laser etcher based on the processed image route.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void CalculateRuntimeButton_Click(object sender, RoutedEventArgs e)
+        {
+            TextBox pixelSizeBox = this.FindControl<TextBox>("PixelSizeBox");
+            double pixelSize = double.Parse(pixelSizeBox.Text);
+
+            TextBox travelSpeedBox = this.FindControl<TextBox>("TravelSpeedBox");
+            double travelSpeed = double.Parse(travelSpeedBox.Text);
+
+            TextBox etchSpeedBox = this.FindControl<TextBox>("EtchSpeedBox");
+            double etchSpeed = double.Parse(travelSpeedBox.Text);
+
+            CheckBox traceToggle = this.FindControl<CheckBox>("PreEtchTraceToggle");
+            double traceStartDelay = 0;
+            double traceStopDelay = 0;
+            if(traceToggle.IsChecked == true)
+            {
+                TextBox traceDelayBox = this.FindControl<TextBox>("PreEtchTraceOriginDelayBox");
+                traceStartDelay = double.Parse(traceDelayBox.Text);
+                traceStopDelay = traceStartDelay;
+            }
+
+            TimeSpan estimate = Route.EstimateTime(pixelSize, travelSpeed, etchSpeed, traceStartDelay, traceStopDelay);
+            TextBlock runtimeLabel = this.FindControl<TextBlock>("RuntimeLabel");
+            runtimeLabel.Text = string.Format("{0:%d}d {0:%h}h {0:%m}m {0:%s}s", estimate);
         }
 
 
@@ -123,7 +185,7 @@ namespace OpenEtch
         /// </summary>
         /// <param name="sender">Not used</param>
         /// <param name="e">Not used</param>
-        public void Export_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
+        public void ExportButton_Click(object sender, RoutedEventArgs e)
         {
             // NYI
         }

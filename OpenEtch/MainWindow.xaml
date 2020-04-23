@@ -34,10 +34,11 @@
       <Grid Grid.Column="0" RowDefinitions="Auto, Auto, *">
 
         <!-- Control Buttons -->
-        <Grid Grid.Row="0" RowDefinitions="Auto, Auto, Auto">
-          <Button Name="LoadImageButton" Grid.Row="0" Margin="5" Content="Load Image" Click="LoadImage_Click"/>
-          <Button Name="ExportButton" Grid.Row="1" Margin="5" Content="Export G-code" IsEnabled="False" Click="Export_Click"/>
-          <Grid Grid.Row="2" RowDefinitions="Auto, Auto, Auto, Auto, Auto" ColumnDefinitions="Auto, *">
+        <Grid Grid.Row="0" RowDefinitions="Auto, Auto, Auto, Auto">
+          <Button Name="LoadImageButton" Grid.Row="0" Margin="5" Content="Load Image" Click="LoadImageButton_Click"/>
+          <Button Name="CalculateRuntimeButton" Grid.Row="1" Margin="5" Content="Calculate Runtime" IsEnabled="False" Click="CalculateRuntimeButton_Click"/>
+          <Button Name="ExportButton" Grid.Row="2" Margin="5" Content="Export G-code" IsEnabled="False" Click="ExportButton_Click"/>
+          <Grid Grid.Row="3" RowDefinitions="Auto, Auto, Auto, Auto, Auto" ColumnDefinitions="Auto, *">
             <TextBlock Grid.Row="0" Grid.Column="0" Text="Image Width:" HorizontalAlignment="Right" Margin="5"/>
             <TextBlock Grid.Row="1" Grid.Column="0" Text="Image Height:" HorizontalAlignment="Right" Margin="5"/>
             <TextBlock Grid.Row="2" Grid.Column="0" Text="Target Width:" HorizontalAlignment="Right" Margin="5"/>
