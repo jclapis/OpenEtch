@@ -14,17 +14,12 @@
  * limitations under the License.
  * ======================================================================== */
 
- 
+
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
-using Avalonia.Media;
-using Avalonia.Media.Imaging;
-using Avalonia.Visuals.Media.Imaging;
 using System;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OpenEtch
 {
@@ -44,6 +39,12 @@ namespace OpenEtch
         /// The router for converting etch segments into laser moves
         /// </summary>
         private readonly Router Router;
+
+
+        /// <summary>
+        /// The loaded image
+        /// </summary>
+        private ProcessedImage ProcessedImage;
 
 
         /// <summary>
@@ -73,10 +74,11 @@ namespace OpenEtch
         /// <param name="e">Not used</param>
         public async void LoadImageButton_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            Button runtimeButton = this.FindControl<Button>("CalculateRuntimeButton");
+            Button recalculateButton = this.FindControl<Button>("RecalculateButton");
             Button exportButton = this.FindControl<Button>("ExportButton");
-            runtimeButton.IsEnabled = false;
+            recalculateButton.IsEnabled = false;
             exportButton.IsEnabled = false;
+            ProcessedImage = null;
             Route = null;
 
             // Give the user a new dialog for choosing the image file
@@ -111,10 +113,12 @@ namespace OpenEtch
             try
             {
                 LoadImage(imagePath);
-                runtimeButton.IsEnabled = true;
+                recalculateButton.IsEnabled = true;
+                exportButton.IsEnabled = true;
             }
             catch(Exception ex)
             {
+                ProcessedImage = null;
                 Route = null;
                 await MessageBox.Show(this, $"Error loading image: {ex.Message}", "Error loading image");
                 return;
@@ -123,60 +127,14 @@ namespace OpenEtch
 
 
         /// <summary>
-        /// Loads and processes an image from the filesystem.
-        /// </summary>
-        /// <param name="ImagePath">The path on the filesystem of the image to load</param>
-        private void LoadImage(string ImagePath)
-        {
-            ProcessedImage image = ImageProcessor.ProcessImage(ImagePath);
-            Image preview = this.FindControl<Image>("Preview");
-            preview.Source = image.Bitmap;
-            preview.InvalidateVisual();
-
-            TextBlock imageWidthLabel = this.FindControl<TextBlock>("ImageWidthLabel");
-            TextBlock imageHeightLabel = this.FindControl<TextBlock>("ImageHeightLabel");
-            imageWidthLabel.Text = $"{image.Width} px";
-            imageHeightLabel.Text = $"{image.Height} px";
-
-            RouteImage(image);
-        }
-
-
-        private void RouteImage(ProcessedImage Image)
-        {
-            Route = Router.Route(Image);
-        }
-
-
-        /// <summary>
-        /// Estimates the runtime for the laser etcher based on the processed image route.
+        /// Recalculates the physical dimensions of the target and estimates the runtime
+        /// for the laser etcher based on the processed image route.
         /// </summary>
         /// <param name="sender">Not used</param>
         /// <param name="e">Not used</param>
-        public void CalculateRuntimeButton_Click(object sender, RoutedEventArgs e)
+        public void RecalculateButton_Click(object sender, RoutedEventArgs e)
         {
-            TextBox pixelSizeBox = this.FindControl<TextBox>("PixelSizeBox");
-            double pixelSize = double.Parse(pixelSizeBox.Text);
-
-            TextBox travelSpeedBox = this.FindControl<TextBox>("TravelSpeedBox");
-            double travelSpeed = double.Parse(travelSpeedBox.Text);
-
-            TextBox etchSpeedBox = this.FindControl<TextBox>("EtchSpeedBox");
-            double etchSpeed = double.Parse(etchSpeedBox.Text);
-
-            CheckBox traceToggle = this.FindControl<CheckBox>("PreEtchTraceToggle");
-            double traceStartDelay = 0;
-            double traceStopDelay = 0;
-            if(traceToggle.IsChecked == true)
-            {
-                TextBox traceDelayBox = this.FindControl<TextBox>("PreEtchTraceOriginDelayBox");
-                traceStartDelay = double.Parse(traceDelayBox.Text);
-                traceStopDelay = traceStartDelay;
-            }
-
-            TimeSpan estimate = Route.EstimateTime(pixelSize, travelSpeed, etchSpeed, traceStartDelay, traceStopDelay);
-            TextBlock runtimeLabel = this.FindControl<TextBlock>("RuntimeLabel");
-            runtimeLabel.Text = string.Format("{0:%d}d {0:%h}h {0:%m}m {0:%s}s", estimate);
+            RecalculateDimensionsAndRuntime();
         }
 
 
@@ -188,6 +146,72 @@ namespace OpenEtch
         public void ExportButton_Click(object sender, RoutedEventArgs e)
         {
             // NYI
+        }
+
+
+        /// <summary>
+        /// Loads and processes an image from the filesystem.
+        /// </summary>
+        /// <param name="ImagePath">The path on the filesystem of the image to load</param>
+        private void LoadImage(string ImagePath)
+        {
+            // Clear the previous image if there was one
+            Image preview = this.FindControl<Image>("Preview");
+            preview.Source = null;
+            preview.InvalidateVisual();
+
+            // Process and draw the new image
+            ProcessedImage = ImageProcessor.ProcessImage(ImagePath);
+            preview.Source = ProcessedImage.Bitmap;
+            preview.InvalidateVisual();
+
+            // Set the image dimension labels
+            TextBlock imageWidthLabel = this.FindControl<TextBlock>("ImageWidthLabel");
+            TextBlock imageHeightLabel = this.FindControl<TextBlock>("ImageHeightLabel");
+            imageWidthLabel.Text = $"{ProcessedImage.Width} px";
+            imageHeightLabel.Text = $"{ProcessedImage.Height} px";
+
+            // Route it
+            Route = Router.Route(ProcessedImage);
+            RecalculateDimensionsAndRuntime();
+        }
+
+
+        /// <summary>
+        /// Recalculates the physical dimensions of the target and estimates the runtime
+        /// for the laser etcher based on the processed image route.
+        /// </summary>
+        private void RecalculateDimensionsAndRuntime()
+        {
+            TextBox pixelSizeBox = this.FindControl<TextBox>("PixelSizeBox");
+            double pixelSize = double.Parse(pixelSizeBox.Text);
+            double targetWidth = ProcessedImage.Width * pixelSize;
+            double targetHeight = ProcessedImage.Height * pixelSize;
+
+            TextBlock targetWidthLabel = this.FindControl<TextBlock>("TargetWidthLabel");
+            TextBlock targetHeightLabel = this.FindControl<TextBlock>("TargetHeightLabel");
+            targetWidthLabel.Text = $"{targetWidth:N2} mm";
+            targetHeightLabel.Text = $"{targetHeight:N2} mm";
+
+            TextBox travelSpeedBox = this.FindControl<TextBox>("TravelSpeedBox");
+            double travelSpeed = double.Parse(travelSpeedBox.Text);
+
+            TextBox etchSpeedBox = this.FindControl<TextBox>("EtchSpeedBox");
+            double etchSpeed = double.Parse(etchSpeedBox.Text);
+
+            CheckBox traceToggle = this.FindControl<CheckBox>("PreEtchTraceToggle");
+            double traceStartDelay = 0;
+            double traceStopDelay = 0;
+            if (traceToggle.IsChecked == true)
+            {
+                TextBox traceDelayBox = this.FindControl<TextBox>("PreEtchTraceOriginDelayBox");
+                traceStartDelay = double.Parse(traceDelayBox.Text);
+                traceStopDelay = traceStartDelay;
+            }
+
+            TimeSpan estimate = Route.EstimateTime(pixelSize, travelSpeed, etchSpeed, traceStartDelay, traceStopDelay);
+            TextBlock runtimeLabel = this.FindControl<TextBlock>("RuntimeLabel");
+            runtimeLabel.Text = string.Format("{0:%d}d {0:%h}h {0:%m}m {0:%s}s", estimate);
         }
 
     }
