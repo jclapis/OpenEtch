@@ -15,6 +15,8 @@
  * ======================================================================== */
 
 
+using System;
+
 namespace OpenEtch
 {
     /// <summary>
@@ -43,6 +45,31 @@ namespace OpenEtch
         {
             this.X = X;
             this.Y = Y;
+        }
+
+
+        /// <summary>
+        /// Gets the distance, in pixel space, from this point to another
+        /// point.
+        /// </summary>
+        /// <param name="OtherPoint">The point to get the distance to</param>
+        /// <returns>The distance from this point to the other point</returns>
+        public double GetDistance(Point OtherPoint)
+        {
+            double xDistance = X - OtherPoint.X;
+            double yDistance = Y - OtherPoint.Y;
+            if (xDistance == 0)
+            {
+                return Math.Abs(yDistance);
+            }
+            else if (yDistance == 0)
+            {
+                return Math.Abs(xDistance);
+            }
+            else
+            {
+                return Math.Sqrt(xDistance * xDistance + yDistance * yDistance);
+            }
         }
 
     }

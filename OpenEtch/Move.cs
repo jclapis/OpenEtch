@@ -15,8 +15,6 @@
  * ======================================================================== */
 
 
-using System;
-
 namespace OpenEtch
 {
     /// <summary>
@@ -60,20 +58,7 @@ namespace OpenEtch
             this.Start = Start;
             this.End = End;
 
-            double xDistance = End.X - Start.X;
-            double yDistance = End.Y - Start.Y;
-            if(xDistance == 0)
-            {
-                Length = Math.Abs(yDistance);
-            }
-            else if (yDistance == 0)
-            {
-                Length = Math.Abs(xDistance);
-            }
-            else
-            {
-                Length = Math.Sqrt(xDistance * xDistance + yDistance * yDistance);
-            }
+            Length = Start.GetDistance(End);
         }
 
     }

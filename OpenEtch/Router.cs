@@ -60,7 +60,61 @@ namespace OpenEtch
 
             // Handle the image etching
             List<Move> etchMoves = new List<Move>();
+            Point lastPoint = origin;
+            foreach(Line line in Image.EtchLines)
+            {
+                // Check if the start of the line or the end is closest to the last point
+                Point lineStart = new Point(line.Start, line.YIndex);
+                Point lineEnd = new Point(line.End, line.YIndex);
+                double startDistance = lastPoint.GetDistance(lineStart);
+                double endDistance = lastPoint.GetDistance(lineEnd);
 
+                // Go left-to-right
+                if(startDistance <= endDistance)
+                {
+                    for(int i = 0; i < line.Segments.Count; i++)
+                    {
+                        EtchSegment segment = line.Segments[i];
+                        Point etchStart = new Point(segment.Start, line.YIndex);
+                        Point etchEnd = new Point(segment.End, line.YIndex);
+
+                        // Travel from the last point to the start of this etch
+                        Move travel = new Move(MoveType.Travel, lastPoint, etchStart);
+                        etchMoves.Add(travel);
+
+                        // Run the etch
+                        Move etch = new Move(MoveType.Etch, etchStart, etchEnd);
+                        etchMoves.Add(etch);
+
+                        // Set the last known point to the end of this etch
+                        lastPoint = etchEnd;
+                    }
+                }
+
+                // Go right-to-left
+                else
+                {
+                    for (int i = line.Segments.Count - 1; i >= 0; i--)
+                    {
+                        EtchSegment segment = line.Segments[i];
+                        Point etchStart = new Point(segment.End, line.YIndex);
+                        Point etchEnd = new Point(segment.Start, line.YIndex);
+
+                        // Travel from the last point to the start of this etch
+                        Move travel = new Move(MoveType.Travel, lastPoint, etchStart);
+                        etchMoves.Add(travel);
+
+                        // Run the etch
+                        Move etch = new Move(MoveType.Etch, etchStart, etchEnd);
+                        etchMoves.Add(etch);
+
+                        // Set the last known point to the end of this etch
+                        lastPoint = etchEnd;
+                    }
+                }
+            }
+
+            // Done!
             Route route = new Route(preEtchTrace, etchMoves);
             return route;
         }

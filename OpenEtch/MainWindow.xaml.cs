@@ -162,7 +162,7 @@ namespace OpenEtch
             double travelSpeed = double.Parse(travelSpeedBox.Text);
 
             TextBox etchSpeedBox = this.FindControl<TextBox>("EtchSpeedBox");
-            double etchSpeed = double.Parse(travelSpeedBox.Text);
+            double etchSpeed = double.Parse(etchSpeedBox.Text);
 
             CheckBox traceToggle = this.FindControl<CheckBox>("PreEtchTraceToggle");
             double traceStartDelay = 0;
