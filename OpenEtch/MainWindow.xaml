@@ -34,16 +34,21 @@
       <Grid Grid.Column="0" RowDefinitions="Auto, Auto, *">
 
         <!-- Control Buttons -->
-        <Grid Grid.Row="0" RowDefinitions="Auto, Auto, Auto, Auto">
+        <Grid Grid.Row="0" RowDefinitions="Auto, Auto, Auto">
           <Button Name="LoadImageButton" Grid.Row="0" Margin="5" Content="Load Image" Click="LoadImage_Click"/>
-          <Button Name="CalculatePathsButton" Grid.Row="1" Margin="5" Content="Calculate Paths" IsEnabled="False" Click="CalculatePaths_Click" />
-          <Button Name="ExportButton" Grid.Row="2" Margin="5" Content="Export G-code" IsEnabled="False" Click="Export_Click"/>
-          <Grid Grid.Row="3" RowDefinitions="Auto, Auto, Auto, Auto, Auto" ColumnDefinitions="Auto, *">
-            <TextBlock Name="ImageWidthLabel" Grid.Row="0" Grid.Column="0" Text="Image Width:" HorizontalAlignment="Right" Margin="5"/>
-            <TextBlock Name="ImageHeightLabel" Grid.Row="1" Grid.Column="0" Text="Image Height:" HorizontalAlignment="Right" Margin="5"/>
-            <TextBlock Name="TargetWidthLabel" Grid.Row="2" Grid.Column="0" Text="Target Width:" HorizontalAlignment="Right" Margin="5"/>
-            <TextBlock Name="TargetHeightLabel" Grid.Row="3" Grid.Column="0" Text="Target Height:" HorizontalAlignment="Right" Margin="5"/>
-            <TextBlock Name="RuntimeLabel" Grid.Row="4" Grid.Column="0" Text="Runtime:" HorizontalAlignment="Right" Margin="5"/>
+          <Button Name="ExportButton" Grid.Row="1" Margin="5" Content="Export G-code" IsEnabled="False" Click="Export_Click"/>
+          <Grid Grid.Row="2" RowDefinitions="Auto, Auto, Auto, Auto, Auto" ColumnDefinitions="Auto, *">
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Image Width:" HorizontalAlignment="Right" Margin="5"/>
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Image Height:" HorizontalAlignment="Right" Margin="5"/>
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="Target Width:" HorizontalAlignment="Right" Margin="5"/>
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="Target Height:" HorizontalAlignment="Right" Margin="5"/>
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="Runtime:" HorizontalAlignment="Right" Margin="5"/>
+
+            <TextBlock Name="ImageWidthLabel" Grid.Row="0" Grid.Column="1" Margin="5"/>
+            <TextBlock Name="ImageHeightLabel" Grid.Row="1" Grid.Column="1" Margin="5"/>
+            <TextBlock Name="TargetWidthLabel" Grid.Row="2" Grid.Column="1" Margin="5"/>
+            <TextBlock Name="TargetHeightLabel" Grid.Row="3" Grid.Column="1" Margin="5"/>
+            <TextBlock Name="RuntimeLabel" Grid.Row="4" Grid.Column="1" Margin="5"/>
           </Grid>
         </Grid>
 
@@ -66,14 +71,14 @@
                   <TextBox Name="PixelSizeBox" Grid.Row="0" Grid.Column="1" Text="0.02"/>
 
                   <TextBlock Grid.Row="2" Grid.Column="0" Margin="5" Text="Origin X (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"
-                             ToolTip.Tip="The X coordinate of the target's bottom-left corner"/>
+                             ToolTip.Tip="The X coordinate of the target's top-left corner"/>
                   <TextBox Name="OriginXBox" Grid.Row="2" Grid.Column="1" Text="70"
-                             ToolTip.Tip="The X coordinate of the target's bottom-left corner"/>
+                             ToolTip.Tip="The X coordinate of the target's top-left corner"/>
 
                   <TextBlock Grid.Row="4" Grid.Column="0" Margin="5" Text="Origin Y (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"
-                             ToolTip.Tip="The Y coordinate of the target's bottom-left corner"/>
+                             ToolTip.Tip="The Y coordinate of the target's top-left corner"/>
                   <TextBox Name="OriginYBox" Grid.Row="4" Grid.Column="1" Text="140"
-                             ToolTip.Tip="The Y coordinate of the target's bottom-left corner"/>
+                             ToolTip.Tip="The Y coordinate of the target's top-left corner"/>
 
                   <TextBlock Grid.Row="6" Grid.Column="0" Margin="5" Text="Z Height (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                   <TextBox Name="ZHeightBox" Grid.Row="6" Grid.Column="1" Text="50"/>

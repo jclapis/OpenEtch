@@ -31,6 +31,10 @@ namespace OpenEtch
     /// </summary>
     public class MainWindow : Window
     {
+        private readonly ImageProcessor ImageProcessor;
+
+        private ProcessedImage ProcessedImage;
+
         /// <summary>
         /// Creates a new MainWindow instance.
         /// </summary>
@@ -40,6 +44,7 @@ namespace OpenEtch
 #if DEBUG
             this.AttachDevTools();
 #endif
+            ImageProcessor = new ImageProcessor();
         }
 
 
@@ -77,34 +82,39 @@ namespace OpenEtch
                 return;
             }
 
-            // Try to load the image
+            // Try to load and process the image
             string imagePath = selection[0];
-            Image preview = this.FindControl<Image>("Preview");
+            Button exportButton = this.FindControl<Button>("ExportButton");
             try
             {
-                preview.Source = new Bitmap(imagePath);
+                LoadImage(imagePath);
+                exportButton.IsEnabled = true;
             }
             catch(Exception ex)
             {
+                ProcessedImage = null;
+                exportButton.IsEnabled = false;
                 await MessageBox.Show(this, $"Error loading image: {ex.Message}", "Error loading image");
                 return;
             }
-
-            Button calculatePathsButton = this.FindControl<Button>("CalculatePathsButton");
-            Button exportButton = this.FindControl<Button>("ExportButton");
-            calculatePathsButton.IsEnabled = true;
-            exportButton.IsEnabled = false;
         }
 
 
         /// <summary>
-        /// Determines the optimal etching route for the loaded image.
+        /// Loads and processes an image from the filesystem.
         /// </summary>
-        /// <param name="sender">Not used</param>
-        /// <param name="e">Not used</param>
-        public void CalculatePaths_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
+        /// <param name="ImagePath">The path on the filesystem of the image to load</param>
+        private void LoadImage(string ImagePath)
         {
-            // NYI
+            ProcessedImage = ImageProcessor.ProcessImage(ImagePath);
+            Image preview = this.FindControl<Image>("Preview");
+            preview.Source = ProcessedImage.Bitmap;
+            preview.InvalidateVisual();
+
+            TextBlock imageWidthLabel = this.FindControl<TextBlock>("ImageWidthLabel");
+            TextBlock imageHeightLabel = this.FindControl<TextBlock>("ImageHeightLabel");
+            imageWidthLabel.Text = $"{ProcessedImage.Width} px";
+            imageHeightLabel.Text = $"{ProcessedImage.Height} px";
         }
 
 
