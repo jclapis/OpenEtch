@@ -206,9 +206,16 @@ namespace OpenEtch
                             WriteCommandLine($"M73 P{percentComplete} R{minutesRemaining}", null);
                         }
                     }
+                    writer.WriteLine();
+
+                    // Run the post-etch cleanup process so Prusa printers don't complain about incomplete files
+                    WriteCommandLine(null, "Post-etch cleanup");
+                    WriteCommandLine(LaserOffCommand, null);
+                    WriteCommandLine("G4", "Wait for moves to finish");
+                    WriteCommandLine($"{MoveCommand} X0", "Move the X-axis out of the way for easy target access");
+                    WriteCommandLine("M84", "Disable motors");
 
                     // Done!
-                    WriteCommandLine(LaserOffCommand, null);
                     writer.Flush();
                 }
 
