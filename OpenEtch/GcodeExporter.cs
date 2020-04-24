@@ -132,7 +132,7 @@ namespace OpenEtch
                     WriteCommandLine("G21", "Use millimeters");
                     WriteCommandLine($"{MoveCommand} Z{ZHeight}", "Set the desired Z position (assuming it is already homed)");
                     WriteCommandLine($"G28 X Y", "Home the X and Y axes");
-                    WriteCommandLine($"{MoveCommand} X{OriginX} Y{OriginY} F{TravelSpeed}", "Move to the image origin");
+                    WriteCommandLine($"{MoveCommand} X{OriginX} Y{OriginY} F6000", "Move to the image origin");
                     writer.WriteLine();
 
                     // Run the trace if requested
@@ -212,7 +212,7 @@ namespace OpenEtch
                     WriteCommandLine(null, "Post-etch cleanup");
                     WriteCommandLine(LaserOffCommand, null);
                     WriteCommandLine("G4", "Wait for moves to finish");
-                    WriteCommandLine($"{MoveCommand} X0", "Move the X-axis out of the way for easy target access");
+                    WriteCommandLine($"{MoveCommand} X0 F6000", "Move the X-axis out of the way for easy target access");
                     WriteCommandLine("M84", "Disable motors");
 
                     // Done!
