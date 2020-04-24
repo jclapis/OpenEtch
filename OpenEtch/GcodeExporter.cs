@@ -240,7 +240,7 @@ namespace OpenEtch
         private (string, string) ConvertPointToGcodeCoordinates(Point Point)
         {
             double x = Point.X * PixelSize + OriginX;
-            double y = Point.Y * PixelSize + OriginY;
+            double y = OriginY - Point.Y * PixelSize; // Y is inverted because (0,0) on the printer is the bottom-left, instead of the top-left
             string xString = x.ToString("N3");
             string yString = y.ToString("N3");
             return (xString, yString);
