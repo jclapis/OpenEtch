@@ -16,9 +16,7 @@
 
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace OpenEtch
 {
@@ -70,8 +68,28 @@ namespace OpenEtch
         /// Converts the provided route to G-code with the given settings, and saves it to the 
         /// provided file.
         /// </summary>
-        /// <param name="Filename"></param>
-        /// <param name="Route"></param>
+        /// <param name="TargetFilename">The file path of the target G-code file to write</param>
+        /// <param name="OriginalFilename">The original name of the image that was loaded</param>
+        /// <param name="Route">The etching route for the image</param>
+        /// <param name="CommentMode">The G-code comment format to use</param>
+        /// <param name="PixelSize">The size of each pixel (mm per pixel)</param>
+        /// <param name="OriginX">The X coordinate of the top-left corner, in mm</param>
+        /// <param name="OriginY">The Y coordinate of the top-left corner, in mm</param>
+        /// <param name="ZHeight">The Z height to set the laser cutter during etching, in mm</param>
+        /// <param name="TravelSpeed">The speed to move the head between etching operations
+        /// (when the laser is off), in mm per minute</param>
+        /// <param name="EtchSpeed">The speed to move the head during etching operations
+        /// (when the laser is on), in mm per minute</param>
+        /// <param name="LaserOffCommand">The G-code command to turn the laser off</param>
+        /// <param name="LaserLowCommand">The G-code command to turn the laser on, but
+        /// at a low power level (used for the pre-etch trace preview)</param>
+        /// <param name="LaserEtchCommand">The G-code command to turn the laser on full
+        /// power during etching</param>
+        /// <param name="MoveCommand">The G-code command to use during moves</param>
+        /// <param name="PerformPreEtchTrace">True to perform the pre-etch boundary trace preview,
+        /// false to disable it and get right to etching</param>
+        /// <param name="EtchTraceDelay">The delay, in milliseconds, to wait at the start and end
+        /// of the pre-etch trace preview</param>
         public void ExportGcode(
             string TargetFilename,
             string OriginalFilename,
