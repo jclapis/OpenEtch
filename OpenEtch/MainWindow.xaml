@@ -115,19 +115,19 @@
                              ToolTip.Tip="The command to use for high-power laser mode, used in etching steps"/>
 
                   <TextBlock Grid.Row="6" Grid.Column="0" Margin="5" Text="Move:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                  <DropDown Name="MoveCommandBox" Grid.Row="6" Grid.Column="1" SelectedIndex="0">
-                    <DropDownItem Content="G0"/>
-                    <DropDownItem Content="G1"/>
-                  </DropDown>
+                  <ComboBox Name="MoveCommandBox" Grid.Row="6" Grid.Column="1" SelectedIndex="0">
+                    <ComboBoxItem Content="G0"/>
+                    <ComboBoxItem Content="G1"/>
+                  </ComboBox>
 
                   <TextBlock Grid.Row="8" Grid.Column="0" Margin="5" Text="Home:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                   <TextBox Name="HomeCommandBox" Grid.Row="8" Grid.Column="1" Text="G28 X Y"/>
 
                   <TextBlock Grid.Row="10" Grid.Column="0" Margin="5" Text="Comments:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                  <DropDown Name="CommentStyleBox" Grid.Row="10" Grid.Column="1" SelectedIndex="0">
-                    <DropDownItem Content="; [Semicolon]"/>
-                    <DropDownItem Content="(...) [Parentheses]"/>
-                  </DropDown>
+                  <ComboBox Name="CommentStyleBox" Grid.Row="10" Grid.Column="1" SelectedIndex="0">
+                    <ComboBoxItem Content="; [Semicolon]"/>
+                    <ComboBoxItem Content="(...) [Parentheses]"/>
+                  </ComboBox>
                 </Grid>
 
                 <!-- Pre-Etch Tracing -->

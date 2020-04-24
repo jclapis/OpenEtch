@@ -20,6 +20,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using System;
+using System.IO;
 
 namespace OpenEtch
 {
@@ -39,6 +40,18 @@ namespace OpenEtch
         /// The router for converting etch segments into laser moves
         /// </summary>
         private readonly Router Router;
+
+
+        /// <summary>
+        /// The G-code exporter
+        /// </summary>
+        private readonly GcodeExporter Exporter;
+
+
+        /// <summary>
+        /// The name of the original image being processed
+        /// </summary>
+        private string OriginalFilename;
 
 
         /// <summary>
@@ -64,6 +77,7 @@ namespace OpenEtch
 #endif
             ImageProcessor = new ImageProcessor();
             Router = new Router();
+            Exporter = new GcodeExporter();
         }
 
 
@@ -80,6 +94,7 @@ namespace OpenEtch
             exportButton.IsEnabled = false;
             ProcessedImage = null;
             Route = null;
+            Title = $"OpenEtch v{VersionInfo.Version}";
 
             // Give the user a new dialog for choosing the image file
             OpenFileDialog dialog = new OpenFileDialog()
@@ -115,6 +130,8 @@ namespace OpenEtch
                 LoadImage(imagePath);
                 recalculateButton.IsEnabled = true;
                 exportButton.IsEnabled = true;
+                OriginalFilename = Path.GetFileName(imagePath);
+                Title = $"OpenEtch v{VersionInfo.Version} - {OriginalFilename}";
             }
             catch(Exception ex)
             {
@@ -143,9 +160,94 @@ namespace OpenEtch
         /// </summary>
         /// <param name="sender">Not used</param>
         /// <param name="e">Not used</param>
-        public void ExportButton_Click(object sender, RoutedEventArgs e)
+        public async void ExportButton_Click(object sender, RoutedEventArgs e)
         {
-            // NYI
+            try
+            {
+                // Get the target file path to save the g-code to
+                SaveFileDialog dialog = new SaveFileDialog()
+                {
+                    Filters =
+                {
+                    new FileDialogFilter
+                    {
+                        Name = "G-code files",
+                        Extensions = { "gcode" }
+                    }
+                },
+                    DefaultExtension = "gcode"
+                };
+
+                // Sanitize so it always ends in .gcode
+                string targetFilename = await dialog.ShowAsync(this);
+                if (string.IsNullOrEmpty(targetFilename))
+                {
+                    return;
+                }
+                if (!targetFilename.EndsWith(".gcode"))
+                {
+                    targetFilename = $"{targetFilename}.gcode";
+                }
+
+                // Get all of the relevant variables from the UI
+                CommentMode commentMode = CommentMode.Semicolon;
+                ComboBox commentStyleBox = this.FindControl<ComboBox>("CommentStyleBox");
+                if (commentStyleBox.SelectedIndex == 1)
+                {
+                    commentMode = CommentMode.Parentheses;
+                }
+
+                TextBox pixelSizeBox = this.FindControl<TextBox>("PixelSizeBox");
+                double pixelSize = double.Parse(pixelSizeBox.Text);
+
+                TextBox originXBox = this.FindControl<TextBox>("OriginXBox");
+                double originX = double.Parse(originXBox.Text);
+
+                TextBox originYBox = this.FindControl<TextBox>("OriginYBox");
+                double originY = double.Parse(originYBox.Text);
+
+                TextBox zHeightBox = this.FindControl<TextBox>("ZHeightBox");
+                double zHeight = double.Parse(zHeightBox.Text);
+
+                TextBox travelSpeedBox = this.FindControl<TextBox>("TravelSpeedBox");
+                double travelSpeed = double.Parse(travelSpeedBox.Text);
+
+                TextBox etchSpeedBox = this.FindControl<TextBox>("EtchSpeedBox");
+                double etchSpeed = double.Parse(etchSpeedBox.Text);
+
+                TextBox laserOffCommandBox = this.FindControl<TextBox>("LaserOffCommandBox");
+                string laserOffCommand = laserOffCommandBox.Text;
+
+                TextBox laserlowCommandBox = this.FindControl<TextBox>("LaserLowCommandBox");
+                string laserlowCommand = laserlowCommandBox.Text;
+
+                TextBox laserHighCommandBox = this.FindControl<TextBox>("LaserHighCommandBox");
+                string laserHighCommand = laserHighCommandBox.Text;
+
+                ComboBox moveCommandBox = this.FindControl<ComboBox>("MoveCommandBox");
+                string moveCommand = ((ComboBoxItem)moveCommandBox.SelectedItem).Content.ToString();
+
+                CheckBox traceToggle = this.FindControl<CheckBox>("PreEtchTraceToggle");
+                bool performTrace = false;
+                int traceDelay = 0;
+                if (traceToggle.IsChecked == true)
+                {
+                    performTrace = true;
+                    TextBox traceDelayBox = this.FindControl<TextBox>("PreEtchTraceOriginDelayBox");
+                    traceDelay = (int)Math.Round(double.Parse(traceDelayBox.Text));
+                }
+
+                // Run it!
+                Exporter.ExportGcode(targetFilename, OriginalFilename, Route, commentMode,
+                    pixelSize, originX, originY, zHeight, travelSpeed, etchSpeed,
+                    laserOffCommand, laserlowCommand, laserHighCommand, moveCommand, performTrace, traceDelay);
+
+                await MessageBox.Show(this, $"File {Path.GetFileName(targetFilename)} successfully exported.", "Export succeeded");
+            }
+            catch(Exception ex)
+            {
+                await MessageBox.Show(this, $"Error exporting file: {ex.Message}", "Export failed");
+            }
         }
 
 
@@ -209,7 +311,7 @@ namespace OpenEtch
                 traceStopDelay = traceStartDelay;
             }
 
-            TimeSpan estimate = Route.EstimateTime(pixelSize, travelSpeed, etchSpeed, traceStartDelay, traceStopDelay);
+            (TimeSpan estimate, double _) = Route.EstimateTimeAndDistance(pixelSize, travelSpeed, etchSpeed, true, traceStartDelay, traceStopDelay);
             TextBlock runtimeLabel = this.FindControl<TextBlock>("RuntimeLabel");
             runtimeLabel.Text = string.Format("{0:%d}d {0:%h}h {0:%m}m {0:%s}s", estimate);
         }

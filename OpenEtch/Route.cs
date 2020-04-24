@@ -57,27 +57,31 @@ namespace OpenEtch
         /// <param name="PixelSize">The size of each pixel, in millimeters</param>
         /// <param name="TravelSpeed">The travel speed setting, in millimeters per minute</param>
         /// <param name="EtchSpeed">The etch speed setting, in millimeters per minute</param>
+        /// <param name="IncludeTrace">True to include the pre-etch trace preview in the 
+        /// estimates, false to ignore it.</param>
         /// <param name="TraceStartPause">The number of milliseconds to wait before starting the 
         /// pre-etch boundary preview trace</param>
         /// <param name="TraceEndPause">The number of milliseconds to wait after finishing the
         /// pre-etch boundary preview trace</param>
-        /// <returns>An estimate of the total etching time for this route</returns>
-        public TimeSpan EstimateTime(double PixelSize, double TravelSpeed, double EtchSpeed, 
-            double TraceStartPause, double TraceEndPause)
+        /// <returns>An estimate of the total etching time and total travel distance for this route</returns>
+        public (TimeSpan, double) EstimateTimeAndDistance(double PixelSize, double TravelSpeed, double EtchSpeed, 
+            bool IncludeTrace, double TraceStartPause, double TraceEndPause)
         {
             // Convert the speeds to mm per millisecond
             double travelSpeed_MmPerMs = TravelSpeed / 60000.0;
             double etchSpeed_MmPerMs = EtchSpeed / 60000.0;
             double traceSpeed_MmPerMs = travelSpeed_MmPerMs;
             double totalMilliseconds = TraceStartPause + TraceEndPause;
+            double totalDistance = 0;
 
             // Calculate the pre-etch trace preview
-            if (PreEtchTrace != null)
+            if (IncludeTrace)
             {
                 foreach (Move move in PreEtchTrace)
                 {
                     double length = move.Length * PixelSize;
                     double time = length / traceSpeed_MmPerMs;
+                    totalDistance += length;
                     totalMilliseconds += time;
                 }
             }
@@ -95,13 +99,14 @@ namespace OpenEtch
                 {
                     time = length / etchSpeed_MmPerMs;
                 }
+                totalDistance += length;
                 totalMilliseconds += time;
             }
 
             // Get the total estimate as a TimeSpan
             int roundedMilliseconds = (int)Math.Round(totalMilliseconds);
-            TimeSpan estimate = new TimeSpan(0, 0, 0, 0, roundedMilliseconds);
-            return estimate;
+            TimeSpan runtimeEstimate = new TimeSpan(0, 0, 0, 0, roundedMilliseconds);
+            return (runtimeEstimate, totalDistance);
         }
 
     }
