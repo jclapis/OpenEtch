@@ -33,6 +33,7 @@ namespace OpenEtch
     {
         #region Controls
 
+        private readonly TextBox PassesBox;
         private readonly TextBox PixelSizeBox;
         private readonly TextBox OriginXBox;
         private readonly TextBox OriginYBox;
@@ -102,6 +103,7 @@ namespace OpenEtch
             this.AttachDevTools();
 #endif
             // Cache the UI components
+            PassesBox = this.FindControl<TextBox>("PassesBox");
             PixelSizeBox = this.FindControl<TextBox>("PixelSizeBox");
             OriginXBox = this.FindControl<TextBox>("OriginXBox");
             OriginYBox = this.FindControl<TextBox>("OriginYBox");
@@ -121,7 +123,8 @@ namespace OpenEtch
             try
             {
                 Config.Load();
-                
+
+                PassesBox.Text = Config.Passes.ToString();
                 PixelSizeBox.Text = Config.PixelSize.ToString();
                 OriginXBox.Text = Config.OriginX.ToString();
                 OriginYBox.Text = Config.OriginY.ToString();
@@ -161,8 +164,8 @@ namespace OpenEtch
 
             // Load the processors
             ImageProcessor = new ImageProcessor();
-            Router = new Router();
-            Exporter = new GcodeExporter();
+            Router = new Router(Config);
+            Exporter = new GcodeExporter(Config);
         }
 
 
@@ -274,58 +277,8 @@ namespace OpenEtch
                     targetFilename = $"{targetFilename}.gcode";
                 }
 
-                // Get all of the relevant variables from the UI
-                CommentMode commentMode = CommentMode.Semicolon;
-                ComboBox commentStyleBox = this.FindControl<ComboBox>("CommentStyleBox");
-                if (commentStyleBox.SelectedIndex == 1)
-                {
-                    commentMode = CommentMode.Parentheses;
-                }
-
-                TextBox pixelSizeBox = this.FindControl<TextBox>("PixelSizeBox");
-                double pixelSize = double.Parse(pixelSizeBox.Text);
-
-                TextBox originXBox = this.FindControl<TextBox>("OriginXBox");
-                double originX = double.Parse(originXBox.Text);
-
-                TextBox originYBox = this.FindControl<TextBox>("OriginYBox");
-                double originY = double.Parse(originYBox.Text);
-
-                TextBox zHeightBox = this.FindControl<TextBox>("ZHeightBox");
-                double zHeight = double.Parse(zHeightBox.Text);
-
-                TextBox travelSpeedBox = this.FindControl<TextBox>("TravelSpeedBox");
-                double travelSpeed = double.Parse(travelSpeedBox.Text);
-
-                TextBox etchSpeedBox = this.FindControl<TextBox>("EtchSpeedBox");
-                double etchSpeed = double.Parse(etchSpeedBox.Text);
-
-                TextBox laserOffCommandBox = this.FindControl<TextBox>("LaserOffCommandBox");
-                string laserOffCommand = laserOffCommandBox.Text;
-
-                TextBox laserlowCommandBox = this.FindControl<TextBox>("LaserLowCommandBox");
-                string laserlowCommand = laserlowCommandBox.Text;
-
-                TextBox laserHighCommandBox = this.FindControl<TextBox>("LaserHighCommandBox");
-                string laserHighCommand = laserHighCommandBox.Text;
-
-                ComboBox moveCommandBox = this.FindControl<ComboBox>("MoveCommandBox");
-                string moveCommand = ((ComboBoxItem)moveCommandBox.SelectedItem).Content.ToString();
-
-                CheckBox traceToggle = this.FindControl<CheckBox>("PreEtchTraceToggle");
-                bool performTrace = false;
-                int traceDelay = 0;
-                if (traceToggle.IsChecked == true)
-                {
-                    performTrace = true;
-                    TextBox traceDelayBox = this.FindControl<TextBox>("PreEtchTraceOriginDelayBox");
-                    traceDelay = (int)Math.Round(double.Parse(traceDelayBox.Text));
-                }
-
                 // Run it!
-                Exporter.ExportGcode(targetFilename, OriginalFilename, Route, commentMode,
-                    pixelSize, originX, originY, zHeight, travelSpeed, etchSpeed,
-                    laserOffCommand, laserlowCommand, laserHighCommand, moveCommand, performTrace, traceDelay);
+                Exporter.ExportGcode(targetFilename, OriginalFilename, Route);
 
                 await MessageBox.Show(this, $"File {Path.GetFileName(targetFilename)} successfully exported.", "Export succeeded");
             }
@@ -370,8 +323,7 @@ namespace OpenEtch
         /// </summary>
         private void RecalculateDimensionsAndRuntime()
         {
-            TextBox pixelSizeBox = this.FindControl<TextBox>("PixelSizeBox");
-            double pixelSize = double.Parse(pixelSizeBox.Text);
+            double pixelSize = Config.PixelSize;
             double targetWidth = ProcessedImage.Width * pixelSize;
             double targetHeight = ProcessedImage.Height * pixelSize;
 
@@ -380,23 +332,8 @@ namespace OpenEtch
             targetWidthLabel.Text = $"{targetWidth:N2} mm";
             targetHeightLabel.Text = $"{targetHeight:N2} mm";
 
-            TextBox travelSpeedBox = this.FindControl<TextBox>("TravelSpeedBox");
-            double travelSpeed = double.Parse(travelSpeedBox.Text);
-
-            TextBox etchSpeedBox = this.FindControl<TextBox>("EtchSpeedBox");
-            double etchSpeed = double.Parse(etchSpeedBox.Text);
-
-            CheckBox traceToggle = this.FindControl<CheckBox>("PreEtchTraceToggle");
-            double traceStartDelay = 0;
-            double traceStopDelay = 0;
-            if (traceToggle.IsChecked == true)
-            {
-                TextBox traceDelayBox = this.FindControl<TextBox>("PreEtchTraceOriginDelayBox");
-                traceStartDelay = double.Parse(traceDelayBox.Text);
-                traceStopDelay = traceStartDelay;
-            }
-
-            (TimeSpan estimate, double _) = Route.EstimateTimeAndDistance(pixelSize, travelSpeed, etchSpeed, true, traceStartDelay, traceStopDelay);
+            (TimeSpan estimate, double _) = Route.EstimateTimeAndDistance(true);
+            estimate *= Config.Passes;
             TextBlock runtimeLabel = this.FindControl<TextBlock>("RuntimeLabel");
             runtimeLabel.Text = string.Format("{0:%d}d {0:%h}h {0:%m}m {0:%s}s", estimate);
         }
@@ -420,6 +357,24 @@ namespace OpenEtch
 
 
         #region Input Validators
+
+        /// <summary>
+        /// Saves the value in <see cref="PassesBox"/> to the configuration if it's valid,
+        /// or resets it to the configuration value if it's invalid.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void PassesBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (int.TryParse(PassesBox.Text, out int newValue))
+            {
+                Config.Passes = newValue;
+            }
+            else
+            {
+                PassesBox.Text = Config.Passes.ToString();
+            }
+        }
 
         /// <summary>
         /// Saves the value in <see cref="PixelSizeBox"/> to the configuration if it's valid,

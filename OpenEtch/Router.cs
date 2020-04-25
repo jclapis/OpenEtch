@@ -25,11 +25,17 @@ namespace OpenEtch
     internal class Router
     {
         /// <summary>
+        /// The configuration settings for the program
+        /// </summary>
+        private readonly Configuration Config;
+
+        /// <summary>
         /// Creates a new <see cref="Router"/> instance.
         /// </summary>
-        public Router()
+        /// <param name="Config">The configuration settings for the program</param>
+        public Router(Configuration Config)
         {
-
+            this.Config = Config;
         }
 
 
@@ -113,7 +119,7 @@ namespace OpenEtch
             }
 
             // Done!
-            Route route = new Route(preEtchTrace, etchMoves);
+            Route route = new Route(Config, preEtchTrace, etchMoves);
             return route;
         }
 

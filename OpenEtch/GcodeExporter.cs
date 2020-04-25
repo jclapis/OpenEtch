@@ -26,9 +26,9 @@ namespace OpenEtch
     internal class GcodeExporter
     {
         /// <summary>
-        /// The comment format to use in G-code
+        /// The configuration settings for the program
         /// </summary>
-        private CommentMode CommentMode;
+        private readonly Configuration Config;
 
 
         /// <summary>
@@ -38,29 +38,12 @@ namespace OpenEtch
 
 
         /// <summary>
-        /// The X value of the target's origin, in mm
-        /// </summary>
-        private double OriginX;
-
-
-        /// <summary>
-        /// The Y value of the target's origin, in mm
-        /// </summary>
-        private double OriginY;
-
-
-        /// <summary>
-        /// The number of mm per pixel
-        /// </summary>
-        private double PixelSize;
-
-
-        /// <summary>
         /// Creates a new <see cref="GcodeExporter"/> instance
         /// </summary>
-        public GcodeExporter()
+        /// <param name="Config">The configuration settings for the program</param>
+        public GcodeExporter(Configuration Config)
         {
-
+            this.Config = Config;
         }
 
 
@@ -71,48 +54,11 @@ namespace OpenEtch
         /// <param name="TargetFilename">The file path of the target G-code file to write</param>
         /// <param name="OriginalFilename">The original name of the image that was loaded</param>
         /// <param name="Route">The etching route for the image</param>
-        /// <param name="CommentMode">The G-code comment format to use</param>
-        /// <param name="PixelSize">The size of each pixel (mm per pixel)</param>
-        /// <param name="OriginX">The X coordinate of the top-left corner, in mm</param>
-        /// <param name="OriginY">The Y coordinate of the top-left corner, in mm</param>
-        /// <param name="ZHeight">The Z height to set the laser cutter during etching, in mm</param>
-        /// <param name="TravelSpeed">The speed to move the head between etching operations
-        /// (when the laser is off), in mm per minute</param>
-        /// <param name="EtchSpeed">The speed to move the head during etching operations
-        /// (when the laser is on), in mm per minute</param>
-        /// <param name="LaserOffCommand">The G-code command to turn the laser off</param>
-        /// <param name="LaserLowCommand">The G-code command to turn the laser on, but
-        /// at a low power level (used for the pre-etch trace preview)</param>
-        /// <param name="LaserEtchCommand">The G-code command to turn the laser on full
-        /// power during etching</param>
-        /// <param name="MoveCommand">The G-code command to use during moves</param>
-        /// <param name="PerformPreEtchTrace">True to perform the pre-etch boundary trace preview,
-        /// false to disable it and get right to etching</param>
-        /// <param name="EtchTraceDelay">The delay, in milliseconds, to wait at the start and end
-        /// of the pre-etch trace preview</param>
         public void ExportGcode(
             string TargetFilename,
             string OriginalFilename,
-            Route Route,
-            CommentMode CommentMode,
-            double PixelSize,
-            double OriginX,
-            double OriginY,
-            double ZHeight,
-            double TravelSpeed,
-            double EtchSpeed,
-            string LaserOffCommand,
-            string LaserLowCommand,
-            string LaserEtchCommand,
-            string MoveCommand,
-            bool PerformPreEtchTrace,
-            int EtchTraceDelay)
+            Route Route)
         {
-            this.CommentMode = CommentMode;
-            this.OriginX = OriginX;
-            this.OriginY = OriginY;
-            this.PixelSize = PixelSize;
-
             try
             {
                 using (FileStream stream = new FileStream(TargetFilename, FileMode.Create, FileAccess.Write))
@@ -127,92 +73,98 @@ namespace OpenEtch
 
                     // Initialize the machine
                     WriteCommandLine(null, "Initialize the machine");
-                    WriteCommandLine(LaserOffCommand, "Disable the laser");
+                    WriteCommandLine(Config.LaserOffCommand, "Disable the laser");
                     WriteCommandLine("G90", "Set to absolute positioning mode");
                     WriteCommandLine("G21", "Use millimeters");
-                    WriteCommandLine($"{MoveCommand} Z{ZHeight}", "Set the desired Z position (assuming it is already homed)");
+                    WriteCommandLine($"{Config.MoveCommand} Z{Config.ZHeight}", "Set the desired Z position (assuming it is already homed)");
                     WriteCommandLine($"G28 X Y", "Home the X and Y axes");
-                    WriteCommandLine($"{MoveCommand} X{OriginX} Y{OriginY} F6000", "Move to the image origin");
+                    WriteCommandLine($"{Config.MoveCommand} X{Config.OriginX} Y{Config.OriginY} F6000", "Move to the image origin");
                     writer.WriteLine();
 
                     // Run the trace if requested
-                    if (PerformPreEtchTrace)
+                    if (Config.IsBoundaryPreviewEnabled)
                     {
                         WriteCommandLine(null, "Perform the pre-etch trace preview");
-                        WriteCommandLine(LaserLowCommand, "Enable the laser in low-power mode");
-                        if (EtchTraceDelay > 0)
+                        WriteCommandLine(Config.LaserLowCommand, "Enable the laser in low-power mode");
+                        if (Config.PreviewDelay > 0)
                         {
-                            WriteCommandLine($"G4 P{EtchTraceDelay}", $"Wait for {EtchTraceDelay}ms before starting the trace");
+                            WriteCommandLine($"G4 P{Config.PreviewDelay}", $"Wait for {Config.PreviewDelay}ms before starting the trace");
                         }
                         foreach (Move move in Route.PreEtchTrace)
                         {
                             (string x, string y) = ConvertPointToGcodeCoordinates(move.End);
-                            WriteCommandLine($"{MoveCommand} X{x} Y{y} F{TravelSpeed}", null);
+                            WriteCommandLine($"{Config.MoveCommand} X{x} Y{y} F{Config.TravelSpeed}", null);
                         }
-                        if (EtchTraceDelay > 0)
+                        if (Config.PreviewDelay > 0)
                         {
-                            WriteCommandLine($"G4 P{EtchTraceDelay}", $"Wait for {EtchTraceDelay}ms before ending the trace");
+                            WriteCommandLine($"G4 P{Config.PreviewDelay}", $"Wait for {Config.PreviewDelay}ms before ending the trace");
                         }
-                        WriteCommandLine(LaserOffCommand, "Disable the laser");
+                        WriteCommandLine(Config.LaserOffCommand, "Disable the laser");
                         writer.WriteLine();
                     }
 
                     // Run the etch route
-                    double travelSpeed_MmPerMs = TravelSpeed / 60000.0;
-                    double etchSpeed_MmPerMs = EtchSpeed / 60000.0;
-                    (TimeSpan runtimeEstimate, double totalDistance) = Route.EstimateTimeAndDistance(PixelSize, TravelSpeed, EtchSpeed, false, 0, 0);
+                    double travelSpeed_MmPerMs = Config.TravelSpeed / 60000.0;
+                    double etchSpeed_MmPerMs = Config.EtchSpeed / 60000.0;
+                    (TimeSpan runtimeEstimate, double totalDistance) = Route.EstimateTimeAndDistance(false);
+                    runtimeEstimate *= Config.Passes;
+                    totalDistance *= Config.Passes;
+
                     double distanceSoFar = 0;
                     double timeSoFar = 0;
                     int lastRemainingMinutes = (int)Math.Round(runtimeEstimate.TotalMinutes);
                     int lastPercentComplete = 0;
 
-                    WriteCommandLine(null, "Main image etching route");
-                    for (int i = 0; i < Route.EtchMoves.Count; i++)
+                    for (int pass = 0; pass < Config.Passes; pass++)
                     {
-                        Move move = Route.EtchMoves[i];
-                        double moveTime = 0;
-                        double moveLength = move.Length * PixelSize;
-
-                        // Write the laser mode and move commands
-                        (string x, string y) = ConvertPointToGcodeCoordinates(move.End);
-                        if (move.Type == MoveType.Etch)
+                        WriteCommandLine(null, $"Main image etching route - Pass {pass + 1}");
+                        for (int moveIndex = 0; moveIndex < Route.EtchMoves.Count; moveIndex++)
                         {
-                            WriteCommandLine(LaserEtchCommand, null);
-                            WriteCommandLine($"{MoveCommand} X{x} Y{y} F{EtchSpeed}", null);
-                            moveTime = moveLength / etchSpeed_MmPerMs;
-                        }
-                        else if (move.Type == MoveType.Travel)
-                        {
-                            WriteCommandLine(LaserOffCommand, null);
-                            WriteCommandLine($"{MoveCommand} X{x} Y{y} F{TravelSpeed}", null);
-                            moveTime = moveLength / travelSpeed_MmPerMs;
-                        }
+                            Move move = Route.EtchMoves[moveIndex];
+                            double moveTime = 0;
+                            double moveLength = move.Length * Config.PixelSize;
 
-                        // Calculate the percentage completed in terms of overall travel
-                        distanceSoFar += moveLength;
-                        int percentComplete = (int)(distanceSoFar / totalDistance * 100);
+                            // Write the laser mode and move commands
+                            (string x, string y) = ConvertPointToGcodeCoordinates(move.End);
+                            if (move.Type == MoveType.Etch)
+                            {
+                                WriteCommandLine(Config.LaserHighCommand, null);
+                                WriteCommandLine($"{Config.MoveCommand} X{x} Y{y} F{Config.EtchSpeed}", null);
+                                moveTime = moveLength / etchSpeed_MmPerMs;
+                            }
+                            else if (move.Type == MoveType.Travel)
+                            {
+                                WriteCommandLine(Config.LaserOffCommand, null);
+                                WriteCommandLine($"{Config.MoveCommand} X{x} Y{y} F{Config.TravelSpeed}", null);
+                                moveTime = moveLength / travelSpeed_MmPerMs;
+                            }
 
-                        // Calculate the remaining time estimate
-                        timeSoFar += moveTime;
-                        double timeRemaining = runtimeEstimate.TotalMilliseconds - timeSoFar;
-                        int minutesRemaining = (int)Math.Round(timeRemaining / 60000.0);
+                            // Calculate the percentage completed in terms of overall travel
+                            distanceSoFar += moveLength;
+                            int percentComplete = (int)(distanceSoFar / totalDistance * 100);
 
-                        if (lastPercentComplete != percentComplete || 
-                            lastRemainingMinutes != minutesRemaining)
-                        {
-                            // Update the percentage and remaining time indicator
-                            lastRemainingMinutes = minutesRemaining;
-                            lastPercentComplete = percentComplete;
-                            WriteCommandLine($"M73 P{percentComplete} R{minutesRemaining}", null);
+                            // Calculate the remaining time estimate
+                            timeSoFar += moveTime;
+                            double timeRemaining = runtimeEstimate.TotalMilliseconds - timeSoFar;
+                            int minutesRemaining = (int)Math.Round(timeRemaining / 60000.0);
+
+                            if (lastPercentComplete != percentComplete ||
+                                lastRemainingMinutes != minutesRemaining)
+                            {
+                                // Update the percentage and remaining time indicator
+                                lastRemainingMinutes = minutesRemaining;
+                                lastPercentComplete = percentComplete;
+                                WriteCommandLine($"M73 P{percentComplete} R{minutesRemaining}", null);
+                            }
                         }
+                        writer.WriteLine();
                     }
-                    writer.WriteLine();
 
                     // Run the post-etch cleanup process so Prusa printers don't complain about incomplete files
                     WriteCommandLine(null, "Post-etch cleanup");
-                    WriteCommandLine(LaserOffCommand, null);
+                    WriteCommandLine(Config.LaserOffCommand, null);
                     WriteCommandLine("G4", "Wait for moves to finish");
-                    WriteCommandLine($"{MoveCommand} X0 F6000", "Move the X-axis out of the way for easy target access");
+                    WriteCommandLine($"{Config.MoveCommand} X0 F6000", "Move the X-axis out of the way for easy target access");
                     WriteCommandLine("M84", "Disable motors");
 
                     // Done!
@@ -241,7 +193,7 @@ namespace OpenEtch
             }
             if (!string.IsNullOrEmpty(Comment))
             {
-                switch (CommentMode)
+                switch (Config.CommentMode)
                 {
                     case CommentMode.Semicolon:
                         Writer.Write($"; {Comment}");
@@ -264,8 +216,8 @@ namespace OpenEtch
         /// <returns>The X and Y coordinates of the point in G-code space.</returns>
         private (string, string) ConvertPointToGcodeCoordinates(Point Point)
         {
-            double x = Point.X * PixelSize + OriginX;
-            double y = OriginY - Point.Y * PixelSize; // Y is inverted because (0,0) on the printer is the bottom-left, instead of the top-left
+            double x = Point.X * Config.PixelSize + Config.OriginX;
+            double y = Config.OriginY - Point.Y * Config.PixelSize; // Y is inverted because (0,0) on the printer is the bottom-left, instead of the top-left
             string xString = x.ToString("N3");
             string yString = y.ToString("N3");
             return (xString, yString);

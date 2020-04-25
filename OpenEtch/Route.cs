@@ -26,6 +26,11 @@ namespace OpenEtch
     internal class Route
     {
         /// <summary>
+        /// The configuration settings for the program
+        /// </summary>
+        private readonly Configuration Config;
+
+        /// <summary>
         /// The list of moves for the pre-etch preview trace around the
         /// target boundary if enabled, or null if disabled.
         /// </summary>
@@ -41,11 +46,13 @@ namespace OpenEtch
         /// <summary>
         /// Creates a new <see cref="Route"/> instance.
         /// </summary>
+        /// <param name="Config">The configuration settings for the program</param>
         /// <param name="PreEtchTrace">The list of moves for the pre-etch preview trace around the
         /// target boundary if enabled, or null if disabled.</param>
         /// <param name="EtchMoves">The list of moves involved in etching the target</param>
-        public Route(List<Move> PreEtchTrace, List<Move> EtchMoves)
+        public Route(Configuration Config, List<Move> PreEtchTrace, List<Move> EtchMoves)
         {
+            this.Config = Config;
             this.PreEtchTrace = PreEtchTrace;
             this.EtchMoves = EtchMoves;
         }
@@ -64,22 +71,22 @@ namespace OpenEtch
         /// <param name="TraceEndPause">The number of milliseconds to wait after finishing the
         /// pre-etch boundary preview trace</param>
         /// <returns>An estimate of the total etching time and total travel distance for this route</returns>
-        public (TimeSpan, double) EstimateTimeAndDistance(double PixelSize, double TravelSpeed, double EtchSpeed, 
-            bool IncludeTrace, double TraceStartPause, double TraceEndPause)
+        public (TimeSpan, double) EstimateTimeAndDistance(bool IncludeTrace)
         {
             // Convert the speeds to mm per millisecond
-            double travelSpeed_MmPerMs = TravelSpeed / 60000.0;
-            double etchSpeed_MmPerMs = EtchSpeed / 60000.0;
+            double travelSpeed_MmPerMs = Config.TravelSpeed / 60000.0;
+            double etchSpeed_MmPerMs = Config.EtchSpeed / 60000.0;
             double traceSpeed_MmPerMs = travelSpeed_MmPerMs;
-            double totalMilliseconds = TraceStartPause + TraceEndPause;
+            double totalMilliseconds = 0;
             double totalDistance = 0;
 
             // Calculate the pre-etch trace preview
             if (IncludeTrace)
             {
+                totalMilliseconds = Config.PreviewDelay * 2;
                 foreach (Move move in PreEtchTrace)
                 {
-                    double length = move.Length * PixelSize;
+                    double length = move.Length * Config.PixelSize;
                     double time = length / traceSpeed_MmPerMs;
                     totalDistance += length;
                     totalMilliseconds += time;
@@ -89,7 +96,7 @@ namespace OpenEtch
             // Calculate each move in the main etch sequence
             foreach(Move move in EtchMoves)
             {
-                double length = move.Length * PixelSize;
+                double length = move.Length * Config.PixelSize;
                 double time = 0;
                 if (move.Type == MoveType.Travel)
                 {

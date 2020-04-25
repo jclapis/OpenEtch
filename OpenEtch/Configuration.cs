@@ -26,6 +26,12 @@ namespace OpenEtch
     internal class Configuration
     {
         /// <summary>
+        /// The number of times to run the complete etching path
+        /// </summary>
+        public int Passes { get; set; }
+
+
+        /// <summary>
         /// The size of each pixel (mm per pixel)
         /// </summary>
         public double PixelSize { get; set; }
@@ -124,6 +130,7 @@ namespace OpenEtch
             this.ConfigFileName = ConfigFileName;
 
             // Default settings
+            Passes = 1;
             PixelSize = 0.02;
             OriginX = 70;
             OriginY = 140;
@@ -155,6 +162,12 @@ namespace OpenEtch
             if (settingsTable.TryGetValue("Physical-Parameters", out TomlObject physicalParametersObject))
             {
                 TomlTable physicalParameters = (TomlTable)physicalParametersObject;
+
+                // Passes
+                if (physicalParameters.TryGetValue("Passes", out TomlObject passesObject))
+                {
+                    Passes = passesObject.Get<int>();
+                }
 
                 // PixelSize
                 if (physicalParameters.TryGetValue("PixelSize", out TomlObject pixelSizeObject))
@@ -264,6 +277,10 @@ namespace OpenEtch
         {
             // Physical Paramters
             TomlTable physicalParameters = Toml.Create();
+
+            // Passes
+            TomlInt passes = physicalParameters.Add("Passes", Passes).Added;
+            passes.AddComment(" The number of times to run the complete etching path", CommentLocation.Append);
 
             // PixelSize
             TomlFloat pixelSize = physicalParameters.Add("PixelSize", PixelSize).Added;

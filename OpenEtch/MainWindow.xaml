@@ -68,33 +68,38 @@
                 
                 <!-- Physical Parameters -->
                 <TextBlock HorizontalAlignment="Center" Text="Physical Parameters" FontWeight="Bold" Margin="5"/>
-                <Grid RowDefinitions="Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto" ColumnDefinitions="100, *">
-                  <TextBlock Grid.Row="0" Grid.Column="0" Margin="5" Text="Pixel Size (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"
+                <Grid RowDefinitions="Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto" ColumnDefinitions="100, *">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Margin="5" Text="Etch Passes:" VerticalAlignment="Center" HorizontalAlignment="Right"
+                             ToolTip.Tip="The number of times to run the complete etching path"/>
+                  <TextBox Name="PassesBox" Grid.Row="0" Grid.Column="1" LostFocus="PassesBox_LostFocus"
+                             ToolTip.Tip="The number of times to run the complete etching path"/>
+                  
+                  <TextBlock Grid.Row="2" Grid.Column="0" Margin="5" Text="Pixel Size (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"
                              ToolTip.Tip="The size of each pixel, in millimeters"/>
-                  <TextBox Name="PixelSizeBox" Grid.Row="0" Grid.Column="1" LostFocus="PixelSizeBox_LostFocus"
+                  <TextBox Name="PixelSizeBox" Grid.Row="2" Grid.Column="1" LostFocus="PixelSizeBox_LostFocus"
                              ToolTip.Tip="The size of each pixel, in millimeters"/>
 
-                  <TextBlock Grid.Row="2" Grid.Column="0" Margin="5" Text="Origin X (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"
+                  <TextBlock Grid.Row="4" Grid.Column="0" Margin="5" Text="Origin X (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"
                              ToolTip.Tip="The X coordinate of the target's top-left corner"/>
-                  <TextBox Name="OriginXBox" Grid.Row="2" Grid.Column="1" LostFocus="OriginXBox_LostFocus"
+                  <TextBox Name="OriginXBox" Grid.Row="4" Grid.Column="1" LostFocus="OriginXBox_LostFocus"
                              ToolTip.Tip="The X coordinate of the target's top-left corner"/>
 
-                  <TextBlock Grid.Row="4" Grid.Column="0" Margin="5" Text="Origin Y (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"
+                  <TextBlock Grid.Row="6" Grid.Column="0" Margin="5" Text="Origin Y (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"
                              ToolTip.Tip="The Y coordinate of the target's top-left corner"/>
-                  <TextBox Name="OriginYBox" Grid.Row="4" Grid.Column="1" LostFocus="OriginYBox_LostFocus"
+                  <TextBox Name="OriginYBox" Grid.Row="6" Grid.Column="1" LostFocus="OriginYBox_LostFocus"
                              ToolTip.Tip="The Y coordinate of the target's top-left corner"/>
 
-                  <TextBlock Grid.Row="6" Grid.Column="0" Margin="5" Text="Z Height (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                  <TextBox Name="ZHeightBox" Grid.Row="6" Grid.Column="1" LostFocus="ZHeightBox_LostFocus"/>
+                  <TextBlock Grid.Row="8" Grid.Column="0" Margin="5" Text="Z Height (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                  <TextBox Name="ZHeightBox" Grid.Row="8" Grid.Column="1" LostFocus="ZHeightBox_LostFocus"/>
 
-                  <TextBlock Grid.Row="8" Grid.Column="0" Margin="5" Text="Travel Speed (mm/min):" VerticalAlignment="Center" HorizontalAlignment="Right" TextWrapping="Wrap"
+                  <TextBlock Grid.Row="10" Grid.Column="0" Margin="5" Text="Travel Speed (mm/min):" VerticalAlignment="Center" HorizontalAlignment="Right" TextWrapping="Wrap"
                              ToolTip.Tip="The speed of the laser assembly between etching steps, when the laser is off"/>
-                  <TextBox Name="TravelSpeedBox" Grid.Row="8" Grid.Column="1" LostFocus="TravelSpeedBox_LostFocus"
+                  <TextBox Name="TravelSpeedBox" Grid.Row="10" Grid.Column="1" LostFocus="TravelSpeedBox_LostFocus"
                              ToolTip.Tip="The speed of the laser assembly between etching steps, when the laser is off"/>
 
-                  <TextBlock Grid.Row="10" Grid.Column="0" Margin="5" Text="Etch Speed (mm/min):" VerticalAlignment="Center" HorizontalAlignment="Right" TextWrapping="Wrap"
+                  <TextBlock Grid.Row="12" Grid.Column="0" Margin="5" Text="Etch Speed (mm/min):" VerticalAlignment="Center" HorizontalAlignment="Right" TextWrapping="Wrap"
                              ToolTip.Tip="The speed of the laser assembly during an etching step, when the laser is on"/>
-                  <TextBox Name="EtchSpeedBox" Grid.Row="10" Grid.Column="1" LostFocus="EtchSpeedBox_LostFocus"
+                  <TextBox Name="EtchSpeedBox" Grid.Row="12" Grid.Column="1" LostFocus="EtchSpeedBox_LostFocus"
                              ToolTip.Tip="The speed of the laser assembly during an etching step, when the laser is on"/>
                 </Grid>
 
