@@ -20,7 +20,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" Width="800" Height="600"
+        mc:Ignorable="d" Width="800" Height="800"
         x:Class="OpenEtch.MainWindow"
         Title="OpenEtch">
   <DockPanel>
@@ -71,60 +71,57 @@
                 <Grid RowDefinitions="Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto" ColumnDefinitions="100, *">
                   <TextBlock Grid.Row="0" Grid.Column="0" Margin="5" Text="Pixel Size (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"
                              ToolTip.Tip="The size of each pixel, in millimeters"/>
-                  <TextBox Name="PixelSizeBox" Grid.Row="0" Grid.Column="1" Text="0.02"
+                  <TextBox Name="PixelSizeBox" Grid.Row="0" Grid.Column="1" LostFocus="PixelSizeBox_LostFocus"
                              ToolTip.Tip="The size of each pixel, in millimeters"/>
 
                   <TextBlock Grid.Row="2" Grid.Column="0" Margin="5" Text="Origin X (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"
                              ToolTip.Tip="The X coordinate of the target's top-left corner"/>
-                  <TextBox Name="OriginXBox" Grid.Row="2" Grid.Column="1" Text="70"
+                  <TextBox Name="OriginXBox" Grid.Row="2" Grid.Column="1" LostFocus="OriginXBox_LostFocus"
                              ToolTip.Tip="The X coordinate of the target's top-left corner"/>
 
                   <TextBlock Grid.Row="4" Grid.Column="0" Margin="5" Text="Origin Y (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"
                              ToolTip.Tip="The Y coordinate of the target's top-left corner"/>
-                  <TextBox Name="OriginYBox" Grid.Row="4" Grid.Column="1" Text="140"
+                  <TextBox Name="OriginYBox" Grid.Row="4" Grid.Column="1" LostFocus="OriginYBox_LostFocus"
                              ToolTip.Tip="The Y coordinate of the target's top-left corner"/>
 
                   <TextBlock Grid.Row="6" Grid.Column="0" Margin="5" Text="Z Height (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                  <TextBox Name="ZHeightBox" Grid.Row="6" Grid.Column="1" Text="50"/>
+                  <TextBox Name="ZHeightBox" Grid.Row="6" Grid.Column="1" LostFocus="ZHeightBox_LostFocus"/>
 
                   <TextBlock Grid.Row="8" Grid.Column="0" Margin="5" Text="Travel Speed (mm/min):" VerticalAlignment="Center" HorizontalAlignment="Right" TextWrapping="Wrap"
                              ToolTip.Tip="The speed of the laser assembly between etching steps, when the laser is off"/>
-                  <TextBox Name="TravelSpeedBox" Grid.Row="8" Grid.Column="1" Text="1000"
+                  <TextBox Name="TravelSpeedBox" Grid.Row="8" Grid.Column="1" LostFocus="TravelSpeedBox_LostFocus"
                              ToolTip.Tip="The speed of the laser assembly between etching steps, when the laser is off"/>
 
                   <TextBlock Grid.Row="10" Grid.Column="0" Margin="5" Text="Etch Speed (mm/min):" VerticalAlignment="Center" HorizontalAlignment="Right" TextWrapping="Wrap"
                              ToolTip.Tip="The speed of the laser assembly during an etching step, when the laser is on"/>
-                  <TextBox Name="EtchSpeedBox" Grid.Row="10" Grid.Column="1" Text="100"
+                  <TextBox Name="EtchSpeedBox" Grid.Row="10" Grid.Column="1" LostFocus="EtchSpeedBox_LostFocus"
                              ToolTip.Tip="The speed of the laser assembly during an etching step, when the laser is on"/>
                 </Grid>
 
                 <!-- G-code Commands -->
                 <TextBlock HorizontalAlignment="Center" Text="G-code Commands" FontWeight="Bold" Margin="5,15,5,5"/>
-                <Grid RowDefinitions="Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto" ColumnDefinitions="Auto, *">
+                <Grid RowDefinitions="Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto" ColumnDefinitions="Auto, *">
                   <TextBlock Grid.Row="0" Grid.Column="0" Margin="5" Text="Laser Off:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                  <TextBox Name="LaserOffCommandBox" Grid.Row="0" Grid.Column="1" Text="M107"/>
+                  <TextBox Name="LaserOffCommandBox" Grid.Row="0" Grid.Column="1" LostFocus="LaserOffCommandBox_LostFocus"/>
 
                   <TextBlock Grid.Row="2" Grid.Column="0" Margin="5" Text="Laser Low:" VerticalAlignment="Center" HorizontalAlignment="Right"
                              ToolTip.Tip="The command to use for low-power laser mode, used in operations like the pre-etch trace"/>
-                  <TextBox Name="LaserLowCommandBox" Grid.Row="2" Grid.Column="1" Text="M106 S10"
+                  <TextBox Name="LaserLowCommandBox" Grid.Row="2" Grid.Column="1" LostFocus="LaserLowCommandBox_LostFocus"
                              ToolTip.Tip="The command to use for low-power laser mode, used in operations like the pre-etch trace"/>
 
                   <TextBlock Grid.Row="4" Grid.Column="0" Margin="5" Text="Laser High:" VerticalAlignment="Center" HorizontalAlignment="Right"
                              ToolTip.Tip="The command to use for high-power laser mode, used in etching steps"/>
-                  <TextBox Name="LaserHighCommandBox" Grid.Row="4" Grid.Column="1" Text="M106 S255"
+                  <TextBox Name="LaserHighCommandBox" Grid.Row="4" Grid.Column="1" LostFocus="LaserHighCommandBox_LostFocus"
                              ToolTip.Tip="The command to use for high-power laser mode, used in etching steps"/>
 
                   <TextBlock Grid.Row="6" Grid.Column="0" Margin="5" Text="Move:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                  <ComboBox Name="MoveCommandBox" Grid.Row="6" Grid.Column="1" SelectedIndex="0">
+                  <ComboBox Name="MoveCommandBox" Grid.Row="6" Grid.Column="1" SelectionChanged="MoveCommandBox_SelectionChanged">
                     <ComboBoxItem Content="G0"/>
                     <ComboBoxItem Content="G1"/>
                   </ComboBox>
 
-                  <TextBlock Grid.Row="8" Grid.Column="0" Margin="5" Text="Home:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                  <TextBox Name="HomeCommandBox" Grid.Row="8" Grid.Column="1" Text="G28 X Y"/>
-
-                  <TextBlock Grid.Row="10" Grid.Column="0" Margin="5" Text="Comments:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                  <ComboBox Name="CommentStyleBox" Grid.Row="10" Grid.Column="1" SelectedIndex="0">
+                  <TextBlock Grid.Row="8" Grid.Column="0" Margin="5" Text="Comments:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                  <ComboBox Name="CommentStyleBox" Grid.Row="8" Grid.Column="1" SelectionChanged="CommentStyleBox_SelectionChanged">
                     <ComboBoxItem Content="; [Semicolon]"/>
                     <ComboBoxItem Content="(...) [Parentheses]"/>
                   </ComboBox>
@@ -134,10 +131,10 @@
                 <TextBlock HorizontalAlignment="Center" Text="Pre-Etch Trace Preview" FontWeight="Bold" Margin="5,15,5,5"/>
                 <Grid RowDefinitions="Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto" ColumnDefinitions="100, *">
                   <TextBlock Grid.Row="0" Grid.Column="0" Margin="5" Text="Enabled:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                  <CheckBox Name="PreEtchTraceToggle" Grid.Row="0" Grid.Column="1" IsChecked="True"/>
+                  <CheckBox Name="BoundaryPreviewToggle" Grid.Row="0" Grid.Column="1" Checked="BoundaryPreviewToggle_CheckChanged" Unchecked="BoundaryPreviewToggle_CheckChanged"/>
 
                   <TextBlock Grid.Row="2" Grid.Column="0" Margin="5" Text="Trace Start/Stop Delay (ms):" TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                  <TextBox Name="PreEtchTraceOriginDelayBox" Grid.Row="2" Grid.Column="1" Text="5000" Margin="0,5,5,0"/>
+                  <TextBox Name="BoundaryPreviewDelayBox" Grid.Row="2" Grid.Column="1" Margin="0,5,5,0" LostFocus="BoundaryPreviewDelayBox_LostFocus"/>
                 </Grid>
                 
               </StackPanel>

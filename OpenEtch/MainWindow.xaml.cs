@@ -20,7 +20,9 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using System;
+using System.ComponentModel;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace OpenEtch
 {
@@ -29,6 +31,30 @@ namespace OpenEtch
     /// </summary>
     public class MainWindow : Window
     {
+        #region Controls
+
+        private readonly TextBox PixelSizeBox;
+        private readonly TextBox OriginXBox;
+        private readonly TextBox OriginYBox;
+        private readonly TextBox ZHeightBox;
+        private readonly TextBox TravelSpeedBox;
+        private readonly TextBox EtchSpeedBox;
+        private readonly TextBox LaserOffCommandBox;
+        private readonly TextBox LaserLowCommandBox;
+        private readonly TextBox LaserHighCommandBox;
+        private readonly ComboBox MoveCommandBox;
+        private readonly ComboBox CommentStyleBox;
+        private readonly CheckBox BoundaryPreviewToggle;
+        private readonly TextBox BoundaryPreviewDelayBox;
+
+        #endregion
+
+        /// <summary>
+        /// The settings and configuration
+        /// </summary>
+        private readonly Configuration Config;
+
+
         /// <summary>
         /// The image processor for loading images and parsing them
         /// into etch segments
@@ -75,6 +101,65 @@ namespace OpenEtch
 #if DEBUG
             this.AttachDevTools();
 #endif
+            // Cache the UI components
+            PixelSizeBox = this.FindControl<TextBox>("PixelSizeBox");
+            OriginXBox = this.FindControl<TextBox>("OriginXBox");
+            OriginYBox = this.FindControl<TextBox>("OriginYBox");
+            ZHeightBox = this.FindControl<TextBox>("ZHeightBox");
+            TravelSpeedBox = this.FindControl<TextBox>("TravelSpeedBox");
+            EtchSpeedBox = this.FindControl<TextBox>("EtchSpeedBox");
+            LaserOffCommandBox = this.FindControl<TextBox>("LaserOffCommandBox");
+            LaserLowCommandBox = this.FindControl<TextBox>("LaserLowCommandBox");
+            LaserHighCommandBox = this.FindControl<TextBox>("LaserHighCommandBox");
+            MoveCommandBox = this.FindControl<ComboBox>("MoveCommandBox");
+            CommentStyleBox = this.FindControl<ComboBox>("CommentStyleBox");
+            BoundaryPreviewToggle = this.FindControl<CheckBox>("BoundaryPreviewToggle");
+            BoundaryPreviewDelayBox = this.FindControl<TextBox>("BoundaryPreviewDelayBox");
+
+            // Load the saved configuration, or fallback to the defaults
+            Config = new Configuration("Configuration.toml");
+            try
+            {
+                Config.Load();
+                
+                PixelSizeBox.Text = Config.PixelSize.ToString();
+                OriginXBox.Text = Config.OriginX.ToString();
+                OriginYBox.Text = Config.OriginY.ToString();
+                ZHeightBox.Text = Config.ZHeight.ToString();
+                TravelSpeedBox.Text = Config.TravelSpeed.ToString();
+                EtchSpeedBox.Text = Config.TravelSpeed.ToString();
+                LaserOffCommandBox.Text = Config.LaserOffCommand;
+                LaserLowCommandBox.Text = Config.LaserLowCommand;
+                LaserHighCommandBox.Text = Config.LaserHighCommand;
+                
+                if(Config.MoveCommand == "G1")
+                {
+                    MoveCommandBox.SelectedIndex = 1;
+                }
+                else
+                {
+                    MoveCommandBox.SelectedIndex = 0;
+                }
+                
+                if(Config.CommentMode == CommentMode.Parentheses)
+                {
+                    CommentStyleBox.SelectedIndex = 1;
+                }
+                else
+                {
+                    CommentStyleBox.SelectedIndex = 0;
+                }
+
+                BoundaryPreviewToggle.IsChecked = Config.IsBoundaryPreviewEnabled;
+                BoundaryPreviewDelayBox.Text = Config.PreviewDelay.ToString();
+            }
+            catch(Exception ex)
+            {
+                _ = MessageBox.Show(this, $"Error loading configuration: {ex.Message}. " +
+                    $"Configuration will be set to the default values.", "Error loading configuration");
+            }
+
+            // Load the processors
             ImageProcessor = new ImageProcessor();
             Router = new Router();
             Exporter = new GcodeExporter();
@@ -315,6 +400,233 @@ namespace OpenEtch
             TextBlock runtimeLabel = this.FindControl<TextBlock>("RuntimeLabel");
             runtimeLabel.Text = string.Format("{0:%d}d {0:%h}h {0:%m}m {0:%s}s", estimate);
         }
+
+
+        /// <summary>
+        /// Saves the configuration upon shutdown.
+        /// </summary>
+        /// <param name="e">Not used</param>
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            try
+            {
+                Config.Save();
+            }
+            catch(Exception ex)
+            {
+                _ = MessageBox.Show(this, $"Error saving configuration settings: {ex.Message}.", "Error saving configuration");
+            }
+        }
+
+
+        #region Input Validators
+
+        /// <summary>
+        /// Saves the value in <see cref="PixelSizeBox"/> to the configuration if it's valid,
+        /// or resets it to the configuration value if it's invalid.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void PixelSizeBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if(double.TryParse(PixelSizeBox.Text, out double newValue))
+            {
+                Config.PixelSize = newValue;
+            }
+            else
+            {
+                PixelSizeBox.Text = Config.PixelSize.ToString();
+            }
+        }
+
+
+        /// <summary>
+        /// Saves the value in <see cref="OriginXBox"/> to the configuration if it's valid,
+        /// or resets it to the configuration value if it's invalid.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void OriginXBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (double.TryParse(OriginXBox.Text, out double newValue))
+            {
+                Config.OriginX = newValue;
+            }
+            else
+            {
+                OriginXBox.Text = Config.OriginX.ToString();
+            }
+        }
+
+
+        /// <summary>
+        /// Saves the value in <see cref="OriginYBox"/> to the configuration if it's valid,
+        /// or resets it to the configuration value if it's invalid.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void OriginYBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (double.TryParse(OriginYBox.Text, out double newValue))
+            {
+                Config.OriginY = newValue;
+            }
+            else
+            {
+                OriginYBox.Text = Config.OriginY.ToString();
+            }
+        }
+
+
+        /// <summary>
+        /// Saves the value in <see cref="ZHeightBox"/> to the configuration if it's valid,
+        /// or resets it to the configuration value if it's invalid.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void ZHeightBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (double.TryParse(ZHeightBox.Text, out double newValue))
+            {
+                Config.ZHeight = newValue;
+            }
+            else
+            {
+                ZHeightBox.Text = Config.ZHeight.ToString();
+            }
+        }
+
+
+        /// <summary>
+        /// Saves the value in <see cref="TravelSpeedBox"/> to the configuration if it's valid,
+        /// or resets it to the configuration value if it's invalid.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void TravelSpeedBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (double.TryParse(TravelSpeedBox.Text, out double newValue))
+            {
+                Config.TravelSpeed = newValue;
+            }
+            else
+            {
+                TravelSpeedBox.Text = Config.TravelSpeed.ToString();
+            }
+        }
+
+
+        /// <summary>
+        /// Saves the value in <see cref="EtchSpeedBox"/> to the configuration if it's valid,
+        /// or resets it to the configuration value if it's invalid.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void EtchSpeedBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (double.TryParse(EtchSpeedBox.Text, out double newValue))
+            {
+                Config.EtchSpeed = newValue;
+            }
+            else
+            {
+                EtchSpeedBox.Text = Config.EtchSpeed.ToString();
+            }
+        }
+
+
+        /// <summary>
+        /// Saves the value in <see cref="LaserOffCommandBox"/> to the configuration.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void LaserOffCommandBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            Config.LaserOffCommand = LaserOffCommandBox.Text;
+        }
+
+
+        /// <summary>
+        /// Saves the value in <see cref="LaserLowCommandBox"/> to the configuration.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void LaserLowCommandBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            Config.LaserLowCommand = LaserLowCommandBox.Text;
+        }
+
+
+        /// <summary>
+        /// Saves the value in <see cref="LaserHighCommandBox"/> to the configuration.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void LaserHighCommandBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            Config.LaserHighCommand = LaserHighCommandBox.Text;
+        }
+
+
+        /// <summary>
+        /// Saves the value in <see cref="MoveCommandBox"/> to the configuration.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void MoveCommandBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            Config.MoveCommand = ((ComboBoxItem)MoveCommandBox.SelectedItem).Content.ToString();
+        }
+
+
+        /// <summary>
+        /// Saves the value in <see cref="CommentStyleBox"/> to the configuration.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void CommentStyleBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if(CommentStyleBox.SelectedIndex == 0)
+            {
+                Config.CommentMode = CommentMode.Semicolon;
+            }
+            else
+            {
+                Config.CommentMode = CommentMode.Parentheses;
+            }
+        }
+
+
+        /// <summary>
+        /// Saves the value in <see cref="BoundaryPreviewToggle"/> to the configuration.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void BoundaryPreviewToggle_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            Config.IsBoundaryPreviewEnabled = (BoundaryPreviewToggle.IsChecked == true);
+        }
+
+
+        /// <summary>
+        /// Saves the value in <see cref="BoundaryPreviewDelayBox"/> to the configuration if it's valid,
+        /// or resets it to the configuration value if it's invalid.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void BoundaryPreviewDelayBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (int.TryParse(BoundaryPreviewDelayBox.Text, out int newValue))
+            {
+                Config.PreviewDelay = newValue;
+            }
+            else
+            {
+                BoundaryPreviewDelayBox.Text = Config.PreviewDelay.ToString();
+            }
+        }
+
+        #endregion
 
     }
 }
