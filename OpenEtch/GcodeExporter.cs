@@ -79,6 +79,7 @@ namespace OpenEtch
                     WriteCommandLine($"{Config.MoveCommand} Z{Config.ZHeight}", "Set the desired Z position (assuming it is already homed)");
                     WriteCommandLine($"G28 X Y", "Home the X and Y axes");
                     WriteCommandLine($"{Config.MoveCommand} X{Config.OriginX} Y{Config.OriginY} F6000", "Move to the image origin");
+                    WriteCommandLine("M400", "Wait for the move to finish before starting the laser");
                     writer.WriteLine();
 
                     // Run the trace if requested
@@ -130,12 +131,14 @@ namespace OpenEtch
                             {
                                 WriteCommandLine(Config.LaserHighCommand, null);
                                 WriteCommandLine($"{Config.MoveCommand} X{x} Y{y} F{Config.EtchSpeed}", null);
+                                WriteCommandLine("M400", null);
                                 moveTime = moveLength / etchSpeed_MmPerMs;
                             }
                             else if (move.Type == MoveType.Travel)
                             {
                                 WriteCommandLine(Config.LaserOffCommand, null);
                                 WriteCommandLine($"{Config.MoveCommand} X{x} Y{y} F{Config.TravelSpeed}", null);
+                                WriteCommandLine("M400", null);
                                 moveTime = moveLength / travelSpeed_MmPerMs;
                             }
 
