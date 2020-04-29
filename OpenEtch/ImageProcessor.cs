@@ -109,6 +109,14 @@ namespace OpenEtch
                                 isInEtchSegment = true;
                                 etchStart = x;
                             }
+
+                            // Check if we're at the last pixel in the row but still in an etch segment
+                            else if(x == image.Width - 1)
+                            {
+                                EtchSegment segment = new EtchSegment(etchStart, x);
+                                line.Segments.Add(segment);
+                                isInEtchSegment = false;
+                            }
                         }
 
                         // Move to the next pixel in the bitmap buffer
