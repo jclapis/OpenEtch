@@ -76,8 +76,14 @@ namespace OpenEtch
                     WriteCommandLine(Config.LaserOffCommand, "Disable the laser");
                     WriteCommandLine("G90", "Set to absolute positioning mode");
                     WriteCommandLine("G21", "Use millimeters");
-                    WriteCommandLine($"{Config.MoveCommand} Z{Config.ZHeight}", "Set the desired Z position (assuming it is already homed)");
-                    WriteCommandLine($"G28 X Y", "Home the X and Y axes");
+                    if(Config.ZHeight != -1)
+                    {
+                        WriteCommandLine($"{Config.MoveCommand} Z{Config.ZHeight}", "Set the desired Z position (assuming it is already homed)");
+                    }
+                    if(Config.HomeXY)
+                    {
+                        WriteCommandLine($"G28 X Y", "Home the X and Y axes");
+                    }
                     WriteCommandLine($"{Config.MoveCommand} X{Config.OriginX} Y{Config.OriginY} F6000", "Move to the image origin");
                     WriteCommandLine("M400", "Wait for the move to finish before starting the laser");
                     writer.WriteLine();

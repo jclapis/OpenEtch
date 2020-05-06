@@ -102,6 +102,13 @@ namespace OpenEtch
 
 
         /// <summary>
+        /// True to home the X and Y axes at the start, false to leave them where they were and assume
+        /// that they are already homed.
+        /// </summary>
+        public bool HomeXY { get; set; }
+
+
+        /// <summary>
         /// True to perform the pre-etch boundary trace preview,
         /// false to disable it and get right to etching
         /// </summary>
@@ -137,11 +144,12 @@ namespace OpenEtch
             ZHeight = 50;
             TravelSpeed = 1000;
             EtchSpeed = 100;
-            LaserOffCommand = "M107";
-            LaserLowCommand = "M106 S16";
-            LaserHighCommand = "M106 S255";
+            LaserOffCommand = "M42 P5 S0";
+            LaserLowCommand = "M42 P5 S10";
+            LaserHighCommand = "M42 P5 S255";
             MoveCommand = "G0";
             CommentMode = CommentMode.Semicolon;
+            HomeXY = true;
             IsBoundaryPreviewEnabled = true;
             PreviewDelay = 5000;
         }
@@ -248,6 +256,12 @@ namespace OpenEtch
                         CommentMode = CommentMode.Semicolon;
                     }
                 }
+
+                // HomeXY
+                if (gcodeCommands.TryGetValue("HomeXY", out TomlObject homeXYObject))
+                {
+                    HomeXY = homeXYObject.Get<bool>();
+                }
             }
 
             // Pre-Etch Trace Preview
@@ -328,6 +342,10 @@ namespace OpenEtch
             // CommentMode
             TomlString commentMode = gCodeCommands.Add("CommentMode", CommentMode.ToString()).Added;
             commentMode.AddComment(" The G-code comment format to use (Semicolon or Parentheses)", CommentLocation.Append);
+
+            // HomeXY
+            TomlBool homeXY = gCodeCommands.Add("HomeXY", HomeXY).Added;
+            homeXY.AddComment(" True to home the X and Y axes at the start, false to leave them where they were and assume that they are already homed", CommentLocation.Append);
 
             // Pre-Etch Trace Preview
             TomlTable preEtchTracePreview = Toml.Create();

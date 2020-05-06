@@ -45,6 +45,7 @@ namespace OpenEtch
         private readonly TextBox LaserHighCommandBox;
         private readonly ComboBox MoveCommandBox;
         private readonly ComboBox CommentStyleBox;
+        private readonly CheckBox HomeToggle;
         private readonly CheckBox BoundaryPreviewToggle;
         private readonly TextBox BoundaryPreviewDelayBox;
 
@@ -115,6 +116,7 @@ namespace OpenEtch
             LaserHighCommandBox = this.FindControl<TextBox>("LaserHighCommandBox");
             MoveCommandBox = this.FindControl<ComboBox>("MoveCommandBox");
             CommentStyleBox = this.FindControl<ComboBox>("CommentStyleBox");
+            HomeToggle = this.FindControl<CheckBox>("HomeToggle");
             BoundaryPreviewToggle = this.FindControl<CheckBox>("BoundaryPreviewToggle");
             BoundaryPreviewDelayBox = this.FindControl<TextBox>("BoundaryPreviewDelayBox");
 
@@ -130,7 +132,7 @@ namespace OpenEtch
                 OriginYBox.Text = Config.OriginY.ToString();
                 ZHeightBox.Text = Config.ZHeight.ToString();
                 TravelSpeedBox.Text = Config.TravelSpeed.ToString();
-                EtchSpeedBox.Text = Config.TravelSpeed.ToString();
+                EtchSpeedBox.Text = Config.EtchSpeed.ToString();
                 LaserOffCommandBox.Text = Config.LaserOffCommand;
                 LaserLowCommandBox.Text = Config.LaserLowCommand;
                 LaserHighCommandBox.Text = Config.LaserHighCommand;
@@ -153,6 +155,7 @@ namespace OpenEtch
                     CommentStyleBox.SelectedIndex = 0;
                 }
 
+                HomeToggle.IsChecked = Config.HomeXY;
                 BoundaryPreviewToggle.IsChecked = Config.IsBoundaryPreviewEnabled;
                 BoundaryPreviewDelayBox.Text = Config.PreviewDelay.ToString();
             }
@@ -549,6 +552,17 @@ namespace OpenEtch
             {
                 Config.CommentMode = CommentMode.Parentheses;
             }
+        }
+
+
+        /// <summary>
+        /// Saves the value in <see cref="HomeToggle"/> to the configuration.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void HomeToggle_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            Config.HomeXY = (HomeToggle.IsChecked == true);
         }
 
 

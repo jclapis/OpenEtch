@@ -30,7 +30,7 @@
       </MenuItem>
     </Menu>
 
-    <Grid ColumnDefinitions="220, *">
+    <Grid ColumnDefinitions="240, *">
       <Grid Grid.Column="0" RowDefinitions="Auto, Auto, *">
 
         <!-- Control Buttons -->
@@ -89,8 +89,10 @@
                   <TextBox Name="OriginYBox" Grid.Row="6" Grid.Column="1" LostFocus="OriginYBox_LostFocus"
                              ToolTip.Tip="The Y coordinate of the target's top-left corner"/>
 
-                  <TextBlock Grid.Row="8" Grid.Column="0" Margin="5" Text="Z Height (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                  <TextBox Name="ZHeightBox" Grid.Row="8" Grid.Column="1" LostFocus="ZHeightBox_LostFocus"/>
+                  <TextBlock Grid.Row="8" Grid.Column="0" Margin="5" Text="Z Height (mm):" VerticalAlignment="Center" HorizontalAlignment="Right"
+                             ToolTip.Tip="The Z coordinate (height) of the target's top-left corner. Set to -1 to leave Z alone."/>
+                  <TextBox Name="ZHeightBox" Grid.Row="8" Grid.Column="1" LostFocus="ZHeightBox_LostFocus"
+                             ToolTip.Tip="The Z coordinate (height) of the target's top-left corner. Set to -1 to leave Z alone."/>
 
                   <TextBlock Grid.Row="10" Grid.Column="0" Margin="5" Text="Travel Speed (mm/min):" VerticalAlignment="Center" HorizontalAlignment="Right" TextWrapping="Wrap"
                              ToolTip.Tip="The speed of the laser assembly between etching steps, when the laser is off"/>
@@ -105,7 +107,7 @@
 
                 <!-- G-code Commands -->
                 <TextBlock HorizontalAlignment="Center" Text="G-code Commands" FontWeight="Bold" Margin="5,15,5,5"/>
-                <Grid RowDefinitions="Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto" ColumnDefinitions="Auto, *">
+                <Grid RowDefinitions="Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto, 5, Auto" ColumnDefinitions="Auto, *">
                   <TextBlock Grid.Row="0" Grid.Column="0" Margin="5" Text="Laser Off:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                   <TextBox Name="LaserOffCommandBox" Grid.Row="0" Grid.Column="1" LostFocus="LaserOffCommandBox_LostFocus"/>
 
@@ -130,6 +132,9 @@
                     <ComboBoxItem Content="; [Semicolon]"/>
                     <ComboBoxItem Content="(...) [Parentheses]"/>
                   </ComboBox>
+                  
+                  <TextBlock Grid.Row="10" Grid.Column="0" Margin="5" Text="Home X and Y:" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                  <CheckBox Name="HomeToggle" Grid.Row="10" Grid.Column="1" IsChecked="True" Checked="HomeToggle_CheckChanged" Unchecked="HomeToggle_CheckChanged"/>
                 </Grid>
 
                 <!-- Pre-Etch Tracing -->
