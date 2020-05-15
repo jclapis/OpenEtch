@@ -17,11 +17,14 @@
 
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OpenEtch
@@ -120,6 +123,9 @@ namespace OpenEtch
             BoundaryPreviewToggle = this.FindControl<CheckBox>("BoundaryPreviewToggle");
             BoundaryPreviewDelayBox = this.FindControl<TextBox>("BoundaryPreviewDelayBox");
 
+            // File drag and drop support
+            AddHandler(DragDrop.DropEvent, Drop);
+
             // Load the saved configuration, or fallback to the defaults
             Config = new Configuration("Configuration.toml");
             try
@@ -177,7 +183,7 @@ namespace OpenEtch
         /// </summary>
         /// <param name="sender">Not used</param>
         /// <param name="e">Not used</param>
-        public async void LoadImageButton_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
+        public async void LoadImageButton_Click(object sender, RoutedEventArgs e)
         {
             Button recalculateButton = this.FindControl<Button>("RecalculateButton");
             Button exportButton = this.FindControl<Button>("ExportButton");
@@ -355,6 +361,39 @@ namespace OpenEtch
             catch(Exception ex)
             {
                 _ = MessageBox.Show(this, $"Error saving configuration settings: {ex.Message}.", "Error saving configuration");
+            }
+        }
+
+
+        private async void Drop(object sender, DragEventArgs e)
+        {
+            IEnumerable<string> files = e.Data.GetFileNames();
+            if(files.Count() > 0)
+            {
+                string imagePath = files.ElementAt(0);
+                try
+                {
+                    Button recalculateButton = this.FindControl<Button>("RecalculateButton");
+                    Button exportButton = this.FindControl<Button>("ExportButton");
+                    recalculateButton.IsEnabled = false;
+                    exportButton.IsEnabled = false;
+                    ProcessedImage = null;
+                    Route = null;
+                    Title = $"OpenEtch v{VersionInfo.Version}";
+
+                    LoadImage(imagePath);
+                    recalculateButton.IsEnabled = true;
+                    exportButton.IsEnabled = true;
+                    OriginalFilename = Path.GetFileName(imagePath);
+                    Title = $"OpenEtch v{VersionInfo.Version} - {OriginalFilename}";
+                }
+                catch (Exception ex)
+                {
+                    ProcessedImage = null;
+                    Route = null;
+                    await MessageBox.Show(this, $"Error loading image: {ex.Message}", "Error loading image");
+                    return;
+                }
             }
         }
 

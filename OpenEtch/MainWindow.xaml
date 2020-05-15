@@ -154,7 +154,9 @@
 
       </Grid>
 
-      <Image Grid.Column="1" Name="Preview" Margin="5" RenderOptions.BitmapInterpolationMode="LowQuality"/>
+      <Border Grid.Column="1" BorderBrush="Black" BorderThickness="1" Background="LightGray" Margin="5" CornerRadius="2" DragDrop.AllowDrop="True">
+        <Image Name="Preview" Margin="5" RenderOptions.BitmapInterpolationMode="LowQuality"/>
+      </Border>
 
     </Grid>
   </DockPanel>
