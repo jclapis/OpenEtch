@@ -30,13 +30,13 @@
       </MenuItem>
     </Menu>
 
-    <Grid ColumnDefinitions="240, *">
+    <Grid ColumnDefinitions="224, *">
       <Grid Grid.Column="0" RowDefinitions="Auto, Auto, *">
 
         <!-- Control Buttons -->
         <Grid Grid.Row="0" RowDefinitions="Auto, Auto, Auto, Auto">
           <Button Name="LoadImageButton" Grid.Row="0" Margin="5" Content="Load Image" Click="LoadImageButton_Click"/>
-          <Button Name="RecalculateButton" Grid.Row="1" Margin="5" IsEnabled="False" Content="Recalculate Dimensions and Runtime"
+          <Button Name="RecalculateButton" Grid.Row="1" Margin="5" IsEnabled="False" Content="Recalculate Route"
                   Click="RecalculateButton_Click"/>
           <Button Name="ExportButton" Grid.Row="2" Margin="5" Content="Export G-code" IsEnabled="False" Click="ExportButton_Click"/>
           <Grid Grid.Row="3" RowDefinitions="Auto, Auto, Auto, Auto, Auto" ColumnDefinitions="Auto, *">
@@ -55,6 +55,10 @@
         </Grid>
 
         <StackPanel Grid.Row="1">
+          <Grid ColumnDefinitions="Auto,*" Margin="5">
+            <TextBlock Grid.Column="0" Text="Brightness:"/>
+            <Slider Name="LuminanceSlider" Grid.Column="1"  Minimum="0" Maximum="1" Value="0.5" PropertyChanged="LuminanceSlider_Changed"/>
+          </Grid>
           <TextBlock Text="Settings" FontWeight="Bold" HorizontalAlignment="Center"/>
           <Rectangle Grid.Row="1" Height="2" Fill="Black" Margin="5"/>
         </StackPanel>

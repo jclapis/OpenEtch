@@ -61,16 +61,9 @@ namespace OpenEtch
 
 
         /// <summary>
-        /// The image processor for loading images and parsing them
-        /// into etch segments
-        /// </summary>
-        private readonly ImageProcessor ImageProcessor;
-
-
-        /// <summary>
         /// The router for converting etch segments into laser moves
         /// </summary>
-        private readonly Router Router;
+        private readonly RasterRouter Router;
 
 
         /// <summary>
@@ -88,7 +81,7 @@ namespace OpenEtch
         /// <summary>
         /// The loaded image
         /// </summary>
-        private ProcessedImage ProcessedImage;
+        private EtchableImage ImageToEtch;
 
 
         /// <summary>
@@ -172,8 +165,7 @@ namespace OpenEtch
             }
 
             // Load the processors
-            ImageProcessor = new ImageProcessor();
-            Router = new Router(Config);
+            Router = new RasterRouter(Config);
             Exporter = new GcodeExporter(Config);
         }
 
@@ -189,7 +181,7 @@ namespace OpenEtch
             Button exportButton = this.FindControl<Button>("ExportButton");
             recalculateButton.IsEnabled = false;
             exportButton.IsEnabled = false;
-            ProcessedImage = null;
+            ImageToEtch = null;
             Route = null;
             Title = $"OpenEtch v{VersionInfo.Version}";
 
@@ -232,7 +224,7 @@ namespace OpenEtch
             }
             catch(Exception ex)
             {
-                ProcessedImage = null;
+                ImageToEtch = null;
                 Route = null;
                 await MessageBox.Show(this, $"Error loading image: {ex.Message}", "Error loading image");
                 return;
@@ -310,18 +302,20 @@ namespace OpenEtch
             preview.InvalidateVisual();
 
             // Process and draw the new image
-            ProcessedImage = ImageProcessor.ProcessImage(ImagePath);
-            preview.Source = ProcessedImage.Bitmap;
+            ImageToEtch = new EtchableImage(ImagePath);
+            Slider luminanceSlider = this.FindControl<Slider>("LuminanceSlider");
+            ImageToEtch.ProcessImage(1.0 - luminanceSlider.Value);
+            preview.Source = ImageToEtch.Bitmap;
             preview.InvalidateVisual();
 
             // Set the image dimension labels
             TextBlock imageWidthLabel = this.FindControl<TextBlock>("ImageWidthLabel");
             TextBlock imageHeightLabel = this.FindControl<TextBlock>("ImageHeightLabel");
-            imageWidthLabel.Text = $"{ProcessedImage.Width} px";
-            imageHeightLabel.Text = $"{ProcessedImage.Height} px";
+            imageWidthLabel.Text = $"{ImageToEtch.Width} px";
+            imageHeightLabel.Text = $"{ImageToEtch.Height} px";
 
             // Route it
-            Route = Router.Route(ProcessedImage);
+            Route = Router.Route(ImageToEtch);
             RecalculateDimensionsAndRuntime();
         }
 
@@ -333,8 +327,8 @@ namespace OpenEtch
         private void RecalculateDimensionsAndRuntime()
         {
             double pixelSize = Config.PixelSize;
-            double targetWidth = ProcessedImage.Width * pixelSize;
-            double targetHeight = ProcessedImage.Height * pixelSize;
+            double targetWidth = ImageToEtch.Width * pixelSize;
+            double targetHeight = ImageToEtch.Height * pixelSize;
 
             TextBlock targetWidthLabel = this.FindControl<TextBlock>("TargetWidthLabel");
             TextBlock targetHeightLabel = this.FindControl<TextBlock>("TargetHeightLabel");
@@ -365,6 +359,11 @@ namespace OpenEtch
         }
 
 
+        /// <summary>
+        /// Loads a picture from a file when it's dropped onto the preview image control.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">The drop event arguments containing the contents that were dropped</param>
         private async void Drop(object sender, DragEventArgs e)
         {
             IEnumerable<string> files = e.Data.GetFileNames();
@@ -377,7 +376,7 @@ namespace OpenEtch
                     Button exportButton = this.FindControl<Button>("ExportButton");
                     recalculateButton.IsEnabled = false;
                     exportButton.IsEnabled = false;
-                    ProcessedImage = null;
+                    ImageToEtch = null;
                     Route = null;
                     Title = $"OpenEtch v{VersionInfo.Version}";
 
@@ -389,11 +388,30 @@ namespace OpenEtch
                 }
                 catch (Exception ex)
                 {
-                    ProcessedImage = null;
+                    ImageToEtch = null;
                     Route = null;
                     await MessageBox.Show(this, $"Error loading image: {ex.Message}", "Error loading image");
                     return;
                 }
+            }
+        }
+
+
+        public void LuminanceSlider_Changed(object sender, AvaloniaPropertyChangedEventArgs e)
+        {
+            if(e.Property.Name != "Value")
+            {
+                return;
+            }
+
+            double newThreshold = (double)e.NewValue;
+            if(ImageToEtch != null)
+            {
+                Image preview = this.FindControl<Image>("Preview");
+                ImageToEtch.ProcessImage(1.0 - newThreshold);
+                preview.InvalidateVisual();
+                Button exportButton = this.FindControl<Button>("ExportButton");
+                exportButton.IsEnabled = false;
             }
         }
 

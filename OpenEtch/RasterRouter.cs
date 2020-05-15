@@ -15,39 +15,45 @@
  * ======================================================================== */
 
 
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
+using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace OpenEtch
 {
     /// <summary>
-    /// This class constructs a routing path for etching a processed image.
+    /// This class constructs a routing path for raster-etching a processed image.
     /// </summary>
-    internal class Router
+    internal class RasterRouter
     {
         /// <summary>
         /// The configuration settings for the program
         /// </summary>
         private readonly Configuration Config;
 
+
         /// <summary>
-        /// Creates a new <see cref="Router"/> instance.
+        /// Creates a new <see cref="RasterRouter"/> instance.
         /// </summary>
         /// <param name="Config">The configuration settings for the program</param>
-        public Router(Configuration Config)
+        public RasterRouter(Configuration Config)
         {
             this.Config = Config;
         }
 
 
         /// <summary>
-        /// Creates a route for etching the provided image.
+        /// Creates a route for raster-etching the provided image.
         /// </summary>
         /// <param name="Image">The image to etch</param>
         /// <param name="EnablePreEtchTrace">True if the pre-etch trace preview
         /// should be included, false if it should be ignored.</param>
         /// <returns>A route for etching the provided image</returns>
-        public Route Route(ProcessedImage Image)
+        public Route Route(EtchableImage Image)
         {
+            List<Line> etchLines = GetRasterEtchLines(Image);
             Point origin = new Point(0, 0);
 
             // Handle the pre-etch trace first
@@ -65,7 +71,7 @@ namespace OpenEtch
             // Handle the image etching
             List<Move> etchMoves = new List<Move>();
             Point lastPoint = origin;
-            foreach(Line line in Image.EtchLines)
+            foreach(Line line in etchLines)
             {
                 // Check if the start of the line or the end is closest to the last point
                 Point lineStart = new Point(line.Start, line.YIndex);
@@ -121,6 +127,77 @@ namespace OpenEtch
             // Done!
             Route route = new Route(Config, preEtchTrace, etchMoves);
             return route;
+        }
+
+
+        /// <summary>
+        /// Breaks the provided image into horizontal raster etch segments.
+        /// </summary>
+        /// <param name="Image">The image to get the raster etch lines for</param>
+        /// <returns>A collection of horizontal lines (each of which can have multiple segments)
+        /// necessary to etch the image in raster mode.</returns>
+        private List<Line> GetRasterEtchLines(EtchableImage Image)
+        {
+            List<Line> lines = new List<Line>();
+            using (ILockedFramebuffer bitmapBuffer = Image.Bitmap.Lock())
+            {
+                IntPtr bitmapAddress = bitmapBuffer.Address;
+
+                for (int y = 0; y < Image.Height; y++)
+                {
+                    Line line = new Line(y);
+                    bool isInEtchSegment = false;
+                    int etchStart = 0;
+
+                    for (int x = 0; x < Image.Width; x++)
+                    {
+                        // Get the blue channel - since this is a black and white image, the channel doesn't really matter
+                        byte pixelValue = Marshal.ReadByte(bitmapAddress);
+
+                        // This is a white pixel
+                        if(pixelValue > 127)
+                        {
+                            if (isInEtchSegment)
+                            {
+                                // Create a new etch segment from the recorded start to the previous pixel
+                                EtchSegment segment = new EtchSegment(etchStart, x - 1);
+                                line.Segments.Add(segment);
+                                isInEtchSegment = false;
+                            }
+                        }
+
+                        // This is a black pixel
+                        else
+                        {
+                            if (!isInEtchSegment)
+                            {
+                                // Start a new etch segment
+                                isInEtchSegment = true;
+                                etchStart = x;
+                            }
+
+                            // Check if we're at the last pixel in the row but still in an etch segment
+                            else if (x == Image.Width - 1)
+                            {
+                                EtchSegment segment = new EtchSegment(etchStart, x);
+                                line.Segments.Add(segment);
+                                isInEtchSegment = false;
+                            }
+                        }
+                        
+                        // Move to the next pixel in the bitmap buffer
+                        bitmapAddress += 4;
+                    }
+
+                    // Ignore lines with no etch segments
+                    if (line.Segments.Count > 0)
+                    {
+                        lines.Add(line);
+                    }
+                }
+            }
+
+            return lines;
         }
 
     }
