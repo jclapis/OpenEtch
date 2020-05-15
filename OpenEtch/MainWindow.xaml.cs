@@ -217,6 +217,7 @@ namespace OpenEtch
             try
             {
                 LoadImage(imagePath);
+                RecalculateRoute();
                 recalculateButton.IsEnabled = true;
                 exportButton.IsEnabled = true;
                 OriginalFilename = Path.GetFileName(imagePath);
@@ -240,7 +241,7 @@ namespace OpenEtch
         /// <param name="e">Not used</param>
         public void RecalculateButton_Click(object sender, RoutedEventArgs e)
         {
-            RecalculateDimensionsAndRuntime();
+            RecalculateRoute();
         }
 
 
@@ -315,17 +316,18 @@ namespace OpenEtch
             imageHeightLabel.Text = $"{ImageToEtch.Height} px";
 
             // Route it
-            Route = Router.Route(ImageToEtch);
-            RecalculateDimensionsAndRuntime();
+            RecalculateRoute();
         }
 
 
         /// <summary>
-        /// Recalculates the physical dimensions of the target and estimates the runtime
-        /// for the laser etcher based on the processed image route.
+        /// Recalculates the etch route, including the path, the physical dimensions of the target,
+        /// and the runtime estimate for the laser etcher.
         /// </summary>
-        private void RecalculateDimensionsAndRuntime()
+        private void RecalculateRoute()
         {
+            Route = Router.Route(ImageToEtch);
+
             double pixelSize = Config.PixelSize;
             double targetWidth = ImageToEtch.Width * pixelSize;
             double targetHeight = ImageToEtch.Height * pixelSize;
@@ -339,6 +341,9 @@ namespace OpenEtch
             estimate *= Config.Passes;
             TextBlock runtimeLabel = this.FindControl<TextBlock>("RuntimeLabel");
             runtimeLabel.Text = string.Format("{0:%d}d {0:%h}h {0:%m}m {0:%s}s", estimate);
+
+            Button exportButton = this.FindControl<Button>("ExportButton");
+            exportButton.IsEnabled = true;
         }
 
 
