@@ -49,12 +49,9 @@ namespace OpenEtch
         /// Creates a route for raster-etching the provided image.
         /// </summary>
         /// <param name="Image">The image to etch</param>
-        /// <param name="EnablePreEtchTrace">True if the pre-etch trace preview
-        /// should be included, false if it should be ignored.</param>
         /// <returns>A route for etching the provided image</returns>
         public Route Route(EtchableImage Image)
         {
-            List<Line> etchLines = GetRasterEtchLines(Image);
             Point origin = new Point(0, 0);
 
             // Handle the pre-etch trace first
@@ -74,7 +71,8 @@ namespace OpenEtch
             // Handle the image etching
             List<Path> etchMoves = new List<Path>();
             Point lastPoint = origin;
-            foreach(Line line in etchLines)
+            List<Line> etchLines = GetRasterEtchLines(Image);
+            foreach (Line line in etchLines)
             {
                 // Check if the start of the line or the end is closest to the last point
                 Point lineStart = new Point(line.Start, line.YIndex);

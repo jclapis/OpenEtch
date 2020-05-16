@@ -369,9 +369,8 @@ namespace OpenEtch
             }
             else
             {
-                //Route = StencilRouter.Route(ImageToEtch);
-                ColorBodyOutlines();
-                return;
+                Route = StencilRouter.Route(ImageToEtch);
+                // DrawRoute(); // Debug for showing the outline etch paths
             }
 
             double pixelSize = Config.PixelSize;
@@ -383,7 +382,7 @@ namespace OpenEtch
             targetWidthLabel.Text = $"{targetWidth:N2} mm";
             targetHeightLabel.Text = $"{targetHeight:N2} mm";
 
-            (TimeSpan estimate, double _) = Route.EstimateTimeAndDistance(true);
+            (TimeSpan estimate, double _) = Route.EstimateTimeAndDistance(false);
             estimate *= Config.Passes;
             TextBlock runtimeLabel = this.FindControl<TextBlock>("RuntimeLabel");
             runtimeLabel.Text = string.Format("{0:%d}d {0:%h}h {0:%m}m {0:%s}s", estimate);
@@ -481,6 +480,8 @@ namespace OpenEtch
         public void RasterMode_Checked(object sender, RoutedEventArgs e)
         {
             Mode = EtchMode.Raster;
+            Button exportButton = this.FindControl<Button>("ExportButton");
+            exportButton.IsEnabled = false;
         }
 
 
@@ -493,6 +494,8 @@ namespace OpenEtch
         public void StencilMode_Checked(object sender, RoutedEventArgs e)
         {
             Mode = EtchMode.Stencil;
+            Button exportButton = this.FindControl<Button>("ExportButton");
+            exportButton.IsEnabled = false;
         }
 
 
@@ -535,25 +538,20 @@ namespace OpenEtch
 
 
         /// <summary>
-        /// Debug function that colors the outline of a body, to validate stencil etching paths.
+        /// Debug function that draws the etch paths onto the preview image
         /// </summary>
-        private void ColorBodyOutlines()
+        private void DrawRoute()
         {
-            List<Body> bodies = StencilRouter.FindBodies(ImageToEtch);
-            List<Path> outlines = new List<Path>();
-            foreach(Body body in bodies)
-            {
-                outlines.Add(body.Outline);
-            }
+            List<Path> paths = Route.EtchPaths;
 
             using (Avalonia.Platform.ILockedFramebuffer buffer = ImageToEtch.Bitmap.Lock())
             {
-                foreach (Path outline in outlines)
+                foreach (Path outline in paths)
                 {
                     double numberOfPoints = outline.Points.Count;
                     double halfMark = numberOfPoints / 2.0;
 
-                    for(int i = 0; i < numberOfPoints; i++)
+                    for (int i = 0; i < numberOfPoints; i++)
                     {
                         Point point = outline.Points[i];
 

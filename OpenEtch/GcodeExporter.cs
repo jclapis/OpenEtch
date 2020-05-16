@@ -121,15 +121,14 @@ namespace OpenEtch
                     double timeSoFar = 0;
                     int lastRemainingMinutes = (int)Math.Round(runtimeEstimate.TotalMinutes);
                     int lastPercentComplete = 0;
+                    WriteCommandLine($"M73 P0 R{lastRemainingMinutes}", null);
 
+                    Point previousPoint = new Point(0, 0);
                     for (int pass = 0; pass < Config.Passes; pass++)
                     {
                         WriteCommandLine(null, $"Main image etching route - Pass {pass + 1}");
                         foreach(Path path in Route.EtchPaths)
                         {
-                            double moveTime = 0;
-                            double moveLength = path.Length * Config.PixelSize;
-
                             // Get the start point for this etching path
                             (string x, string y) = ConvertPointToGcodeCoordinates(path.Points[0]);
 
@@ -137,38 +136,33 @@ namespace OpenEtch
                             WriteCommandLine(Config.LaserOffCommand, null);
                             WriteCommandLine($"{Config.MoveCommand} X{x} Y{y} F{Config.TravelSpeed}", null);
                             WriteCommandLine("M400", null);
-                            moveTime = moveLength / travelSpeed_MmPerMs;
+
+                            // Update the remaining time / percent estimates
+                            double moveLength = path.Points[0].GetDistance(previousPoint) * Config.PixelSize;
+                            double moveTime = moveLength / travelSpeed_MmPerMs;
+                            RecalculateProgress(runtimeEstimate, totalDistance,
+                                ref distanceSoFar, ref timeSoFar, ref lastRemainingMinutes, ref lastPercentComplete, moveLength, moveTime);
+                            previousPoint = path.Points[0];
 
                             // Enable the laser
                             WriteCommandLine(Config.LaserHighCommand, null);
 
                             // Queue up all of the points in the path
-                            for(int nextPoint = 1; nextPoint < path.Points.Count; nextPoint++)
+                            for (int i = 1; i < path.Points.Count; i++)
                             {
-                                (string nextX, string nextY) = ConvertPointToGcodeCoordinates(path.Points[nextPoint]);
+                                Point nextPoint = path.Points[i];
+                                (string nextX, string nextY) = ConvertPointToGcodeCoordinates(nextPoint);
                                 WriteCommandLine($"{Config.MoveCommand} X{nextX} Y{nextY} F{Config.EtchSpeed}", null);
+
+                                moveLength = nextPoint.GetDistance(previousPoint) * Config.PixelSize;
+                                moveTime = moveLength / etchSpeed_MmPerMs;
+                                RecalculateProgress(runtimeEstimate, totalDistance,
+                                    ref distanceSoFar, ref timeSoFar, ref lastRemainingMinutes, ref lastPercentComplete, moveLength, moveTime);
+                                previousPoint = nextPoint;
                             }
 
                             // Wait for the path to finish
                             WriteCommandLine("M400", null);
-
-                            // Calculate the percentage completed in terms of overall travel
-                            distanceSoFar += moveLength;
-                            int percentComplete = (int)(distanceSoFar / totalDistance * 100);
-
-                            // Calculate the remaining time estimate
-                            timeSoFar += moveTime;
-                            double timeRemaining = runtimeEstimate.TotalMilliseconds - timeSoFar;
-                            int minutesRemaining = (int)Math.Round(timeRemaining / 60000.0);
-
-                            if (lastPercentComplete != percentComplete ||
-                                lastRemainingMinutes != minutesRemaining)
-                            {
-                                // Update the percentage and remaining time indicator
-                                lastRemainingMinutes = minutesRemaining;
-                                lastPercentComplete = percentComplete;
-                                WriteCommandLine($"M73 P{percentComplete} R{minutesRemaining}", null);
-                            }
                         }
                         writer.WriteLine();
                     }
@@ -188,6 +182,30 @@ namespace OpenEtch
             finally
             {
                 Writer = null;
+            }
+        }
+
+
+
+        private void RecalculateProgress(TimeSpan runtimeEstimate, double totalDistance, ref double distanceSoFar, ref double timeSoFar, ref int lastRemainingMinutes, ref int lastPercentComplete, double moveLength, double moveTime)
+        {
+
+            // Calculate the percentage completed in terms of overall travel
+            distanceSoFar += moveLength;
+            int percentComplete = (int)(distanceSoFar / totalDistance * 100);
+
+            // Calculate the remaining time estimate
+            timeSoFar += moveTime;
+            double timeRemaining = runtimeEstimate.TotalMilliseconds - timeSoFar;
+            int minutesRemaining = (int)Math.Round(timeRemaining / 60000.0);
+
+            if (lastPercentComplete != percentComplete ||
+                lastRemainingMinutes != minutesRemaining)
+            {
+                // Update the percentage and remaining time indicator
+                lastRemainingMinutes = minutesRemaining;
+                lastPercentComplete = percentComplete;
+                WriteCommandLine($"M73 P{percentComplete} R{minutesRemaining}", null);
             }
         }
 

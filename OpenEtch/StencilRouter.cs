@@ -47,9 +47,41 @@ namespace OpenEtch
         }
 
 
+        /// <summary>
+        /// Creates an etching route to etch the outlines of all of the bodies in the image,
+        /// thus providing a stencil.
+        /// </summary>
+        /// <param name="Image">The image to etch</param>
+        /// <returns>A route for etching a stencil of the provided image</returns>
         public Route Route(EtchableImage Image)
         {
-            return null;
+            Point origin = new Point(0, 0);
+
+            // Handle the pre-etch trace first
+            Point topRight = new Point(Image.Width - 1, 0);
+            Point bottomRight = new Point(Image.Width - 1, Image.Height - 1);
+            Point bottomLeft = new Point(0, Image.Height - 1);
+            Path preEtchTrace = new Path(
+                new List<Point>()
+                {
+                    origin,
+                    topRight,
+                    bottomRight,
+                    bottomLeft,
+                    origin
+                });
+
+            // Handle the outline etching
+            List<Body> bodies = FindBodies(Image);
+            List<Path> outlines = new List<Path>();
+            foreach (Body body in bodies)
+            {
+                outlines.Add(body.Outline);
+            }
+
+            // Done!
+            Route route = new Route(Config, preEtchTrace, outlines);
+            return route;
         }
 
 
@@ -84,6 +116,9 @@ namespace OpenEtch
 
                         // Ignore white pixels
                         IntPtr pixelAddress = rowOffsetAddress + (x * 4);
+
+                        // Get the blue channel since that isn't used for path drawing,
+                        // so it will always have the correct pixel value of 0 or 255
                         byte pixelValue = Marshal.ReadByte(pixelAddress);
                         if(pixelValue == 0xFF)
                         {
@@ -352,6 +387,9 @@ namespace OpenEtch
         {
             IntPtr rowOffsetAddress = ImageBuffer.Address + (Point.Y * ImageBuffer.Size.Width * 4);
             IntPtr pixelAddress = rowOffsetAddress + (Point.X * 4);
+
+            // Get the blue channel since that isn't used for path drawing,
+            // so it will always have the correct pixel value of 0 or 255
             byte pixelValue = Marshal.ReadByte(pixelAddress);
             return pixelValue;
         }
