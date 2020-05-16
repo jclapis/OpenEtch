@@ -22,7 +22,7 @@ namespace OpenEtch
     /// <summary>
     /// This represents a single point / pixel on an image.
     /// </summary>
-    internal class Point
+    internal struct Point
     {
         /// <summary>
         /// The X coordinate (in pixels)
@@ -70,6 +70,33 @@ namespace OpenEtch
             {
                 return Math.Sqrt(xDistance * xDistance + yDistance * yDistance);
             }
+        }
+
+
+        /// <summary>
+        /// Compares two points to see if they have the same coordinates.
+        /// </summary>
+        /// <param name="Other">The object to compare to this point</param>
+        /// <returns>True if <paramref name="Other"/> is a <see cref="Point"/>
+        /// with the same X and Y values as this one, otherwise false.</returns>
+        public override bool Equals(object Other)
+        {
+            if(Other is Point otherPoint)
+            {
+                return X == otherPoint.X &&
+                       Y == otherPoint.Y;
+            }
+            return false;
+        }
+
+
+        /// <summary>
+        /// Gets a suitably random hash for this point based on its X and Y coordinates.
+        /// </summary>
+        /// <returns>A hash for the point</returns>
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(X, Y);
         }
 
     }

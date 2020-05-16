@@ -25,10 +25,33 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace OpenEtch
 {
+    /// <summary>
+    /// The mode to use when creating an etching route for the image
+    /// </summary>
+    internal enum EtchMode
+    {
+        /// <summary>
+        /// Raster mode (where the engraver will go through the image vertically,
+        /// horizontal line-by-line, etching all of the black pixels, thus fully
+        /// recreating the image)
+        /// </summary>
+        Raster,
+
+
+        /// <summary>
+        /// Stencil mode (where the engraver will only trace the outlines of
+        /// connected bodies of black pixels in the image, but will leave the middle
+        /// of the bodies alone - good for creating stencils)
+        /// </summary>
+        Stencil
+    }
+
+
     /// <summary>
     /// This is the main UI window for OpenEtch.
     /// </summary>
@@ -61,9 +84,15 @@ namespace OpenEtch
 
 
         /// <summary>
-        /// The router for converting etch segments into laser moves
+        /// The router for creating raster etch routes from images
         /// </summary>
-        private readonly RasterRouter Router;
+        private readonly RasterRouter RasterRouter;
+
+
+        /// <summary>
+        /// The router for creating stencil etch routes from images
+        /// </summary>
+        private readonly StencilRouter StencilRouter;
 
 
         /// <summary>
@@ -88,6 +117,12 @@ namespace OpenEtch
         /// The etching route for the loaded image
         /// </summary>
         private Route Route;
+
+
+        /// <summary>
+        /// The etching mode to use for routing and G-code generation
+        /// </summary>
+        private EtchMode Mode;
 
 
         /// <summary>
@@ -165,7 +200,9 @@ namespace OpenEtch
             }
 
             // Load the processors
-            Router = new RasterRouter(Config);
+            Mode = EtchMode.Raster;
+            RasterRouter = new RasterRouter(Config);
+            StencilRouter = new StencilRouter(Config);
             Exporter = new GcodeExporter(Config);
         }
 
@@ -326,7 +363,16 @@ namespace OpenEtch
         /// </summary>
         private void RecalculateRoute()
         {
-            Route = Router.Route(ImageToEtch);
+            if(Mode == EtchMode.Raster)
+            {
+                Route = RasterRouter.Route(ImageToEtch);
+            }
+            else
+            {
+                //Route = StencilRouter.Route(ImageToEtch);
+                ColorBodyOutlines();
+                return;
+            }
 
             double pixelSize = Config.PixelSize;
             double targetWidth = ImageToEtch.Width * pixelSize;
@@ -402,6 +448,11 @@ namespace OpenEtch
         }
 
 
+        /// <summary>
+        /// Updates the luminance threshold when the brightness slider's value changes.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">The args containing the new slider value</param>
         public void LuminanceSlider_Changed(object sender, AvaloniaPropertyChangedEventArgs e)
         {
             if(e.Property.Name != "Value")
@@ -418,6 +469,101 @@ namespace OpenEtch
                 Button exportButton = this.FindControl<Button>("ExportButton");
                 exportButton.IsEnabled = false;
             }
+        }
+
+
+        /// <summary>
+        /// Changes the active mode to raster mode when the Raster Mode radio is
+        /// checked.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void RasterMode_Checked(object sender, RoutedEventArgs e)
+        {
+            Mode = EtchMode.Raster;
+        }
+
+
+        /// <summary>
+        /// Changes the active mode to stencil mode when the Stencil Mode radio is
+        /// checked.
+        /// </summary>
+        /// <param name="sender">Not used</param>
+        /// <param name="e">Not used</param>
+        public void StencilMode_Checked(object sender, RoutedEventArgs e)
+        {
+            Mode = EtchMode.Stencil;
+        }
+
+
+        /// <summary>
+        /// Debug function that finds the bodies in the image with the stencil router, and
+        /// assigns each of them a random color in the preview image.
+        /// </summary>
+        private void ColorImageBodies()
+        {
+            List<Body> bodies = StencilRouter.FindBodies(ImageToEtch);
+            using (Avalonia.Platform.ILockedFramebuffer buffer = ImageToEtch.Bitmap.Lock())
+            {
+                Random rng = new Random();
+                foreach (Body body in bodies)
+                {
+                    byte randomBlue = (byte)rng.Next(1, 255);
+                    byte randomGreen = (byte)rng.Next(1, 255);
+                    byte randomRed = (byte)rng.Next(1, 255);
+                    int pixelValue;
+                    unchecked
+                    {
+                        pixelValue = (int)0xFF000000;
+                        pixelValue |= (randomRed << 16) |
+                                      (randomGreen << 8) |
+                                      randomBlue;
+                    }
+
+                    foreach (Point point in body.Points)
+                    {
+                        IntPtr rowOffsetAddress = buffer.Address + (point.Y * buffer.Size.Width * 4);
+                        IntPtr pixelAddress = rowOffsetAddress + (point.X * 4);
+                        Marshal.WriteInt32(pixelAddress, pixelValue);
+                    }
+                }
+            }
+
+            Image preview = this.FindControl<Image>("Preview");
+            preview.InvalidateVisual();
+        }
+
+
+        private void ColorBodyOutlines()
+        {
+            List<Body> bodies = StencilRouter.FindBodies(ImageToEtch);
+            using (Avalonia.Platform.ILockedFramebuffer buffer = ImageToEtch.Bitmap.Lock())
+            {
+                foreach (Body body in bodies)
+                {
+                    double numberOfPoints = body.Outline.Count;
+                    for(int i = 0; i < numberOfPoints; i++)
+                    {
+                        Point point = body.Outline[i];
+                        byte green = (byte)Math.Round((numberOfPoints - i) / numberOfPoints * 255.0);
+                        byte red = (byte)(255 - green);
+                        int pixelValue;
+                        unchecked
+                        {
+                            pixelValue = (int)0xFF000000;
+                            pixelValue |= (red << 16) |
+                                          (green << 8);
+                        }
+
+                        IntPtr rowOffsetAddress = buffer.Address + (point.Y * buffer.Size.Width * 4);
+                        IntPtr pixelAddress = rowOffsetAddress + (point.X * 4);
+                        Marshal.WriteInt32(pixelAddress, pixelValue);
+                    }
+                }
+            }
+
+            Image preview = this.FindControl<Image>("Preview");
+            preview.InvalidateVisual();
         }
 
 

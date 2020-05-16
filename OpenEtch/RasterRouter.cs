@@ -15,7 +15,6 @@
  * ======================================================================== */
 
 
-using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using System;
 using System.Collections.Generic;
@@ -24,7 +23,9 @@ using System.Runtime.InteropServices;
 namespace OpenEtch
 {
     /// <summary>
-    /// This class constructs a routing path for raster-etching a processed image.
+    /// This class constructs a routing path for raster-etching a processed image, where
+    /// it will fully reproduce the entire image (including fills) by rasterizing the image
+    /// into a series of horizontal etching lines.
     /// </summary>
     internal class RasterRouter
     {
