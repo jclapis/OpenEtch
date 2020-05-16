@@ -534,19 +534,36 @@ namespace OpenEtch
         }
 
 
+        /// <summary>
+        /// Debug function that colors the outline of a body, to validate stencil etching paths.
+        /// </summary>
         private void ColorBodyOutlines()
         {
             List<Body> bodies = StencilRouter.FindBodies(ImageToEtch);
+            List<Path> outlines = new List<Path>();
+            foreach(Body body in bodies)
+            {
+                outlines.Add(body.Outline);
+            }
+
             using (Avalonia.Platform.ILockedFramebuffer buffer = ImageToEtch.Bitmap.Lock())
             {
-                foreach (Body body in bodies)
+                foreach (Path outline in outlines)
                 {
-                    double numberOfPoints = body.Outline.Count;
+                    double numberOfPoints = outline.Points.Count;
+                    double halfMark = numberOfPoints / 2.0;
+
                     for(int i = 0; i < numberOfPoints; i++)
                     {
-                        Point point = body.Outline[i];
-                        byte green = (byte)Math.Round((numberOfPoints - i) / numberOfPoints * 255.0);
-                        byte red = (byte)(255 - green);
+                        Point point = outline.Points[i];
+
+                        // Green stays at 255 until the halfway mark, then linearly decreases to 0
+                        double greenScale = Math.Max(0, i - halfMark);
+                        byte green = (byte)Math.Round((halfMark - greenScale) / halfMark * 255.0);
+
+                        // Red starts at 0 and linearly increases to 255 at the halfway mark
+                        byte red = (byte)Math.Round(Math.Min(1.0, i / halfMark) * 255.0);
+
                         int pixelValue;
                         unchecked
                         {

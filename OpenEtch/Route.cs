@@ -31,16 +31,16 @@ namespace OpenEtch
         private readonly Configuration Config;
 
         /// <summary>
-        /// The list of moves for the pre-etch preview trace around the
+        /// The path for the pre-etch preview trace around the
         /// target boundary if enabled, or null if disabled.
         /// </summary>
-        public List<Path> PreEtchTrace { get; }
+        public Path PreEtchTrace { get; }
 
 
         /// <summary>
-        /// The list of moves involved in etching the target
+        /// The list of paths involved in etching the target
         /// </summary>
-        public List<Path> EtchMoves { get; }
+        public List<Path> EtchPaths { get; }
 
 
         /// <summary>
@@ -50,26 +50,19 @@ namespace OpenEtch
         /// <param name="PreEtchTrace">The list of moves for the pre-etch preview trace around the
         /// target boundary if enabled, or null if disabled.</param>
         /// <param name="EtchMoves">The list of moves involved in etching the target</param>
-        public Route(Configuration Config, List<Path> PreEtchTrace, List<Path> EtchMoves)
+        public Route(Configuration Config, Path PreEtchTrace, List<Path> EtchMoves)
         {
             this.Config = Config;
             this.PreEtchTrace = PreEtchTrace;
-            this.EtchMoves = EtchMoves;
+            this.EtchPaths = EtchMoves;
         }
 
 
         /// <summary>
         /// Estimates the amount of time a route will take to etch.
         /// </summary>
-        /// <param name="PixelSize">The size of each pixel, in millimeters</param>
-        /// <param name="TravelSpeed">The travel speed setting, in millimeters per minute</param>
-        /// <param name="EtchSpeed">The etch speed setting, in millimeters per minute</param>
         /// <param name="IncludeTrace">True to include the pre-etch trace preview in the 
         /// estimates, false to ignore it.</param>
-        /// <param name="TraceStartPause">The number of milliseconds to wait before starting the 
-        /// pre-etch boundary preview trace</param>
-        /// <param name="TraceEndPause">The number of milliseconds to wait after finishing the
-        /// pre-etch boundary preview trace</param>
         /// <returns>An estimate of the total etching time and total travel distance for this route</returns>
         public (TimeSpan, double) EstimateTimeAndDistance(bool IncludeTrace)
         {
@@ -84,17 +77,15 @@ namespace OpenEtch
             if (IncludeTrace)
             {
                 totalMilliseconds = Config.PreviewDelay * 2;
-                foreach (Path move in PreEtchTrace)
-                {
-                    double length = move.Length * Config.PixelSize;
-                    double time = length / traceSpeed_MmPerMs;
-                    totalDistance += length;
-                    totalMilliseconds += time;
-                }
+
+                double length = PreEtchTrace.Length * Config.PixelSize;
+                double time = length / traceSpeed_MmPerMs;
+                totalDistance += length;
+                totalMilliseconds += time;
             }
 
             // Calculate the etch time for each path in the main etch sequence
-            foreach(Path move in EtchMoves)
+            foreach(Path move in EtchPaths)
             {
                 double length = move.Length * Config.PixelSize;
                 double time = length / etchSpeed_MmPerMs;
@@ -103,10 +94,10 @@ namespace OpenEtch
             }
 
             // Calculate the travel time between paths
-            for(int i = 0; i < EtchMoves.Count - 1; i++)
+            for(int i = 0; i < EtchPaths.Count - 1; i++)
             {
-                Path firstPath = EtchMoves[i];
-                Path secondPath = EtchMoves[i + 1];
+                Path firstPath = EtchPaths[i];
+                Path secondPath = EtchPaths[i + 1];
                 Point startPoint = firstPath.Points[^1];
                 Point endPoint = secondPath.Points[0];
 

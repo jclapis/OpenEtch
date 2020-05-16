@@ -54,58 +54,6 @@ namespace OpenEtch
 
 
         /// <summary>
-        /// Finds outline paths for all of the bodies in the image.
-        /// </summary>
-        /// <param name="Image"></param>
-        /// <returns></returns>
-        public List<Path> FindOutlines(EtchableImage Image)
-        {
-            List<Path> outlines = new List<Path>();
-            bool[,] visitedPixels = new bool[Image.Width, Image.Height];
-
-            using (ILockedFramebuffer buffer = Image.Bitmap.Lock())
-            {
-                IntPtr address = buffer.Address;
-
-                for (int y = 0; y < Image.Height; y++)
-                {
-                    IntPtr rowOffsetAddress = address + (y * Image.Width * 4);
-
-                    for (int x = 0; x < Image.Width; x++)
-                    {
-                        // Ignore pixels we've already looked at
-                        if (visitedPixels[x, y])
-                        {
-                            continue;
-                        }
-
-                        // Set the flag for this pixel because now we've looked at it
-                        visitedPixels[x, y] = true;
-
-                        // Ignore white pixels
-                        IntPtr pixelAddress = rowOffsetAddress + (x * 4);
-                        byte pixelValue = Marshal.ReadByte(pixelAddress);
-                        if (pixelValue == 0xFF)
-                        {
-                            continue;
-                        }
-
-                        // If we get here, we have a new outline!
-                        Path outline = GetOutlinePath(buffer, new Point(x, y));
-                        outlines.Add(outline);
-                        foreach(Point point in outline.Points)
-                        {
-                            visitedPixels[point.X, point.Y] = true;
-                        }
-                    }
-                }
-            }
-
-            return outlines;
-        }
-
-
-        /// <summary>
         /// Finds all of the bodies in the provided image (areas of connected black pixels).
         /// </summary>
         /// <param name="Image">The image to find the bodies in</param>

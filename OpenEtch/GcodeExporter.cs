@@ -97,9 +97,9 @@ namespace OpenEtch
                         {
                             WriteCommandLine($"G4 P{Config.PreviewDelay}", $"Wait for {Config.PreviewDelay}ms before starting the trace");
                         }
-                        foreach (Path move in Route.PreEtchTrace)
+                        foreach (Point point in Route.PreEtchTrace.Points)
                         {
-                            (string x, string y) = ConvertPointToGcodeCoordinates(move.End);
+                            (string x, string y) = ConvertPointToGcodeCoordinates(point);
                             WriteCommandLine($"{Config.MoveCommand} X{x} Y{y} F{Config.TravelSpeed}", null);
                         }
                         if (Config.PreviewDelay > 0)
@@ -125,28 +125,32 @@ namespace OpenEtch
                     for (int pass = 0; pass < Config.Passes; pass++)
                     {
                         WriteCommandLine(null, $"Main image etching route - Pass {pass + 1}");
-                        for (int moveIndex = 0; moveIndex < Route.EtchMoves.Count; moveIndex++)
+                        foreach(Path path in Route.EtchPaths)
                         {
-                            Path move = Route.EtchMoves[moveIndex];
                             double moveTime = 0;
-                            double moveLength = move.Length * Config.PixelSize;
+                            double moveLength = path.Length * Config.PixelSize;
 
-                            // Write the laser mode and move commands
-                            (string x, string y) = ConvertPointToGcodeCoordinates(move.End);
-                            if (move.Type == MoveType.Etch)
+                            // Get the start point for this etching path
+                            (string x, string y) = ConvertPointToGcodeCoordinates(path.Points[0]);
+
+                            // Move to the start of this path
+                            WriteCommandLine(Config.LaserOffCommand, null);
+                            WriteCommandLine($"{Config.MoveCommand} X{x} Y{y} F{Config.TravelSpeed}", null);
+                            WriteCommandLine("M400", null);
+                            moveTime = moveLength / travelSpeed_MmPerMs;
+
+                            // Enable the laser
+                            WriteCommandLine(Config.LaserHighCommand, null);
+
+                            // Queue up all of the points in the path
+                            for(int nextPoint = 1; nextPoint < path.Points.Count; nextPoint++)
                             {
-                                WriteCommandLine(Config.LaserHighCommand, null);
-                                WriteCommandLine($"{Config.MoveCommand} X{x} Y{y} F{Config.EtchSpeed}", null);
-                                WriteCommandLine("M400", null);
-                                moveTime = moveLength / etchSpeed_MmPerMs;
+                                (string nextX, string nextY) = ConvertPointToGcodeCoordinates(path.Points[nextPoint]);
+                                WriteCommandLine($"{Config.MoveCommand} X{nextX} Y{nextY} F{Config.EtchSpeed}", null);
                             }
-                            else if (move.Type == MoveType.Travel)
-                            {
-                                WriteCommandLine(Config.LaserOffCommand, null);
-                                WriteCommandLine($"{Config.MoveCommand} X{x} Y{y} F{Config.TravelSpeed}", null);
-                                WriteCommandLine("M400", null);
-                                moveTime = moveLength / travelSpeed_MmPerMs;
-                            }
+
+                            // Wait for the path to finish
+                            WriteCommandLine("M400", null);
 
                             // Calculate the percentage completed in terms of overall travel
                             distanceSoFar += moveLength;
@@ -173,7 +177,7 @@ namespace OpenEtch
                     WriteCommandLine(null, "Post-etch cleanup");
                     WriteCommandLine(Config.LaserOffCommand, null);
                     WriteCommandLine("G4", "Wait for moves to finish");
-                    WriteCommandLine($"{Config.MoveCommand} X0 F6000", "Move the X-axis out of the way for easy target access");
+                    WriteCommandLine($"{Config.MoveCommand} X10 F6000", "Move the X-axis out of the way for easy target access");
                     WriteCommandLine("M84", "Disable motors");
 
                     // Done!
