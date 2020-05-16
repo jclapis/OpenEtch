@@ -20,6 +20,7 @@ using Avalonia.Controls;
 using Avalonia.Platform;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace OpenEtch
@@ -187,11 +188,6 @@ namespace OpenEtch
                 outline.Add(currentPoint);
                 visitedPoints.Add(currentPoint);
 
-                if(currentPoint.X == 135 && currentPoint.Y == 41)
-                {
-                    int thing = 1;
-                }
-
                 // Check each neighbor point to find the next one in the outline
                 bool foundNextOutlinePoint = false;
                 foreach(Point currentNeighbor in currentNeighbors)
@@ -209,9 +205,11 @@ namespace OpenEtch
                         continue;
                     }
 
-                    // Check if this point has any white pixel neighbors; if it does, it is
-                    // on the outline and becomes the next point.
-                    List<Point> nextNeighbors = GetNeighbors(currentNeighbor, ImageBuffer.Size);
+                    // Check if this point has any white pixel neighbors; if it does, it is on the outline and
+                    // becomes the next point. Start the search from the current point, going clockwise, so it
+                    // will always try to find the outermost point and won't cut through the middle of really thin
+                    // bodies.
+                    List<Point> nextNeighbors = GetNeighbors(currentNeighbor, ImageBuffer.Size, currentPoint);
                     foreach(Point nextNeighbor in nextNeighbors)
                     {
                         byte nextNeighborValue = GetPixelValueAtPoint(ImageBuffer, nextNeighbor);
@@ -252,14 +250,14 @@ namespace OpenEtch
 
 
         /// <summary>
-        /// Gets a list of neighboring points for a given point. The order is clockwise for the
-        /// four immediate neighbors (top, right, bottom, left), followed by the clockwise list of
-        /// the four corners (top right, bottom right, bottom left, top left).
+        /// Gets a list of neighboring points for a given point, in clockwise order optionally starting
+        /// at a reference neighbor.
         /// </summary>
         /// <param name="Point">The point to get the neighbors of</param>
         /// <param name="ImageSize">The size of the image (for bounds checking)</param>
+        /// <param name="StartingNeighbor">The neighbor to start from (defaults to the top middle)</param>
         /// <returns>A list of valid neighboring points.</returns>
-        private List<Point> GetNeighbors(Point Point, PixelSize ImageSize)
+        private List<Point> GetNeighbors(Point Point, PixelSize ImageSize, Point? StartingNeighbor = null)
         {
             int up = Point.Y - 1;
             int left = Point.X - 1;
@@ -267,36 +265,24 @@ namespace OpenEtch
             int down = Point.Y + 1;
             List<Point> neighbors = new List<Point>();
 
-            // Top mid
-            if (up >= 0)
+            // Create the list of neighboring points, starting from the top middle and working clockwise
+            if(up >= 0)
             {
+                // Top mid
                 neighbors.Add(new Point(Point.X, up));
+
+                // Top right
+                if(right < ImageSize.Width)
+                {
+                    neighbors.Add(new Point(right, up));
+                }
             }
 
             // Mid right
-            if (right < ImageSize.Width)
+            if(right < ImageSize.Width)
             {
                 neighbors.Add(new Point(right, Point.Y));
             }
-
-            // Bottom mid
-            if (down < ImageSize.Height)
-            {
-                neighbors.Add(new Point(Point.X, down));
-            }
-
-            // Mid left
-            if (left >= 0)
-            {
-                neighbors.Add(new Point(left, Point.Y));
-            }
-
-            // Top right
-            if (up >= 0 && right < ImageSize.Width)
-            {
-                neighbors.Add(new Point(right, up));
-            }
-
 
             if(down < ImageSize.Height)
             {
@@ -306,6 +292,9 @@ namespace OpenEtch
                     neighbors.Add(new Point(right, down));
                 }
 
+                // Bottom mid
+                neighbors.Add(new Point(Point.X, down));
+
                 // Bottom left
                 if (left >= 0)
                 {
@@ -313,10 +302,40 @@ namespace OpenEtch
                 }
             }
 
-            // Top left
-            if (left >= 0 && up >= 0)
+            if (left >= 0)
             {
-                neighbors.Add(new Point(left, up));
+                // Mid left
+                neighbors.Add(new Point(left, Point.Y));
+
+                // Top left
+                if (up >= 0)
+                {
+                    neighbors.Add(new Point(left, up));
+                }
+            }
+
+            // Find the starting neighbor in the list, if it exists
+            if (StartingNeighbor != null)
+            {
+                for (int i = 0; i < neighbors.Count; i++)
+                {
+                    Point neighbor = neighbors[i];
+                    if(neighbor.Equals(StartingNeighbor.Value))
+                    {
+                        // If it exists, reorder the neighbors so that one comes first and preserve the clockwise order.
+                        Point[] reorderedNeighbors = new Point[neighbors.Count];
+                        for(int j = 0; j < neighbors.Count; j++)
+                        {
+                            int newIndex = j + i;
+                            if(newIndex >= neighbors.Count)
+                            {
+                                newIndex -= neighbors.Count;
+                            }
+                            reorderedNeighbors[j] = neighbors[newIndex];
+                        }
+                        return reorderedNeighbors.ToList();
+                    }
+                }
             }
 
 
