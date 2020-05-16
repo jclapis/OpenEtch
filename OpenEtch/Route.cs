@@ -34,13 +34,13 @@ namespace OpenEtch
         /// The list of moves for the pre-etch preview trace around the
         /// target boundary if enabled, or null if disabled.
         /// </summary>
-        public List<Move> PreEtchTrace { get; }
+        public List<Path> PreEtchTrace { get; }
 
 
         /// <summary>
         /// The list of moves involved in etching the target
         /// </summary>
-        public List<Move> EtchMoves { get; }
+        public List<Path> EtchMoves { get; }
 
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace OpenEtch
         /// <param name="PreEtchTrace">The list of moves for the pre-etch preview trace around the
         /// target boundary if enabled, or null if disabled.</param>
         /// <param name="EtchMoves">The list of moves involved in etching the target</param>
-        public Route(Configuration Config, List<Move> PreEtchTrace, List<Move> EtchMoves)
+        public Route(Configuration Config, List<Path> PreEtchTrace, List<Path> EtchMoves)
         {
             this.Config = Config;
             this.PreEtchTrace = PreEtchTrace;
@@ -84,7 +84,7 @@ namespace OpenEtch
             if (IncludeTrace)
             {
                 totalMilliseconds = Config.PreviewDelay * 2;
-                foreach (Move move in PreEtchTrace)
+                foreach (Path move in PreEtchTrace)
                 {
                     double length = move.Length * Config.PixelSize;
                     double time = length / traceSpeed_MmPerMs;
@@ -93,19 +93,25 @@ namespace OpenEtch
                 }
             }
 
-            // Calculate each move in the main etch sequence
-            foreach(Move move in EtchMoves)
+            // Calculate the etch time for each path in the main etch sequence
+            foreach(Path move in EtchMoves)
             {
                 double length = move.Length * Config.PixelSize;
-                double time = 0;
-                if (move.Type == MoveType.Travel)
-                {
-                    time = length / travelSpeed_MmPerMs;
-                }
-                else if(move.Type == MoveType.Etch)
-                {
-                    time = length / etchSpeed_MmPerMs;
-                }
+                double time = length / etchSpeed_MmPerMs;
+                totalDistance += length;
+                totalMilliseconds += time;
+            }
+
+            // Calculate the travel time between paths
+            for(int i = 0; i < EtchMoves.Count - 1; i++)
+            {
+                Path firstPath = EtchMoves[i];
+                Path secondPath = EtchMoves[i + 1];
+                Point startPoint = firstPath.Points[^1];
+                Point endPoint = secondPath.Points[0];
+
+                double length = startPoint.GetDistance(endPoint) * Config.PixelSize;
+                double time = length / travelSpeed_MmPerMs;
                 totalDistance += length;
                 totalMilliseconds += time;
             }

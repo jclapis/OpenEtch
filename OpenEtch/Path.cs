@@ -15,50 +15,41 @@
  * ======================================================================== */
 
 
+using System.Collections.Generic;
+
 namespace OpenEtch
 {
     /// <summary>
-    /// This represents a single move of the laser etcher.
+    /// This represents an etching path that the laser etcher will take when
+    /// etching one feature of the image.
     /// </summary>
-    internal class Move
+    internal class Path
     {
         /// <summary>
-        /// The type of this move
+        /// The sequence of points that make up this path
         /// </summary>
-        public MoveType Type { get; }
+        public List<Point> Points { get; }
 
 
         /// <summary>
-        /// The starting point of the move
-        /// </summary>
-        public Point Start { get; }
-
-
-        /// <summary>
-        /// The end point of the move
-        /// </summary>
-        public Point End { get; }
-
-
-        /// <summary>
-        /// The overall length of the move, in pixel space units.
+        /// The overall length of the path, in pixel space units.
         /// </summary>
         public double Length { get; }
 
 
         /// <summary>
-        /// Creates a new <see cref="Move"/> instance.
+        /// Creates a new <see cref="Path"/> instance.
         /// </summary>
-        /// <param name="Type">The type of this move</param>
-        /// <param name="Start">The starting point of the move</param>
-        /// <param name="End">The end point of the move</param>
-        public Move(MoveType Type, Point Start, Point End)
+        public Path(List<Point> Points)
         {
-            this.Type = Type;
-            this.Start = Start;
-            this.End = End;
+            this.Points = Points;
 
-            Length = Start.GetDistance(End);
+            for(int i = 0; i < Points.Count - 1; i++)
+            {
+                Point firstPoint = Points[i];
+                Point secondPoint = Points[i + 1];
+                Length += secondPoint.GetDistance(firstPoint);
+            }
         }
 
     }

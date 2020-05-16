@@ -18,7 +18,7 @@
 namespace OpenEtch
 {
     /// <summary>
-    /// Represents the type of a <see cref="Move"/>.
+    /// Represents the type of a <see cref="Path"/>.
     /// </summary>
     internal enum MoveType
     {

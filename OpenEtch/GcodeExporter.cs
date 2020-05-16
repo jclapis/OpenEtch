@@ -97,7 +97,7 @@ namespace OpenEtch
                         {
                             WriteCommandLine($"G4 P{Config.PreviewDelay}", $"Wait for {Config.PreviewDelay}ms before starting the trace");
                         }
-                        foreach (Move move in Route.PreEtchTrace)
+                        foreach (Path move in Route.PreEtchTrace)
                         {
                             (string x, string y) = ConvertPointToGcodeCoordinates(move.End);
                             WriteCommandLine($"{Config.MoveCommand} X{x} Y{y} F{Config.TravelSpeed}", null);
@@ -127,7 +127,7 @@ namespace OpenEtch
                         WriteCommandLine(null, $"Main image etching route - Pass {pass + 1}");
                         for (int moveIndex = 0; moveIndex < Route.EtchMoves.Count; moveIndex++)
                         {
-                            Move move = Route.EtchMoves[moveIndex];
+                            Path move = Route.EtchMoves[moveIndex];
                             double moveTime = 0;
                             double moveLength = move.Length * Config.PixelSize;
 

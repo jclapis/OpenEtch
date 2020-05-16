@@ -33,19 +33,17 @@ namespace OpenEtch
 
 
         /// <summary>
-        /// The points representing the outline (border) of the body, ordered
-        /// to form a continous path.
+        /// The outline (border) of the body, ordered as a continous path
         /// </summary>
-        public List<Point> Outline { get; }
+        public Path Outline { get; }
 
 
         /// <summary>
         /// Creates a new <see cref="Body"/> instance.
         /// </summary>
         /// <param name="Points">All of the points that make up this body</param>
-        /// <param name="Outline">The points representing the outline (border) of
-        /// the body, ordered to form a continous path.</param>
-        public Body(List<Point> Points, List<Point> Outline)
+        /// <param name="Outline">The outline (border) of the body, ordered as a continous path</param>
+        public Body(List<Point> Points, Path Outline)
         {
             this.Points = Points;
             this.Outline = Outline;

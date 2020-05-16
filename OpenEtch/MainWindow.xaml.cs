@@ -257,7 +257,7 @@ namespace OpenEtch
                 RecalculateRoute();
                 recalculateButton.IsEnabled = true;
                 exportButton.IsEnabled = true;
-                OriginalFilename = Path.GetFileName(imagePath);
+                OriginalFilename = System.IO.Path.GetFileName(imagePath);
                 Title = $"OpenEtch v{VersionInfo.Version} - {OriginalFilename}";
             }
             catch(Exception ex)
@@ -319,7 +319,7 @@ namespace OpenEtch
                 // Run it!
                 Exporter.ExportGcode(targetFilename, OriginalFilename, Route);
 
-                await MessageBox.Show(this, $"File {Path.GetFileName(targetFilename)} successfully exported.", "Export succeeded");
+                await MessageBox.Show(this, $"File {System.IO.Path.GetFileName(targetFilename)} successfully exported.", "Export succeeded");
             }
             catch(Exception ex)
             {
@@ -434,7 +434,7 @@ namespace OpenEtch
                     LoadImage(imagePath);
                     recalculateButton.IsEnabled = true;
                     exportButton.IsEnabled = true;
-                    OriginalFilename = Path.GetFileName(imagePath);
+                    OriginalFilename = System.IO.Path.GetFileName(imagePath);
                     Title = $"OpenEtch v{VersionInfo.Version} - {OriginalFilename}";
                 }
                 catch (Exception ex)
